@@ -27,6 +27,7 @@ from backend.routers import (
     health_router,
     outcome_router,
     search_router,
+    v2_search_router,
     voice_router,
 )
 from backend.services import mongo_service
@@ -117,6 +118,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router.router)
     app.include_router(error_router.router)
     app.include_router(outcome_router.router)
+    app.include_router(v2_search_router.router)
 
     @app.exception_handler(Exception)
     async def safe_exception_handler(request: Request, exc: Exception):

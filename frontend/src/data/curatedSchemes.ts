@@ -6,18 +6,26 @@ export interface CuratedScheme {
   emoji: string;
   summary: string;
   ministry: string;
-  ministryFamily: MinistryFamily;
+  /** Optional — only the static curated entries below set this; dynamic API rows omit it. */
+  ministryFamily?: MinistryFamily;
   benefit: string;
   eligibility: string;
   applyLink: string;
   sourceLink: string;
-  defaultRole:
+  /** Optional — same as above. Dynamic rows from /api/v2/featured don't ship a default role. */
+  defaultRole?:
     | 'farmer'
     | 'woman'
     | 'student'
     | 'artisan'
     | 'senior citizen'
     | 'below poverty line household';
+  /** Set on dynamic rows from /api/v2/featured so we can deep-link or fetch detail. */
+  slug?: string;
+  /** "central" | "state" — drives the small location pill on dynamic cards. */
+  level?: string;
+  /** State name when level="state"; absent for central schemes. */
+  state?: string | null;
 }
 
 export const CURATED_SCHEMES: CuratedScheme[] = [

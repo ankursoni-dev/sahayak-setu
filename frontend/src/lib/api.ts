@@ -5,6 +5,7 @@ import type {
   FeedbackRequest,
   ErrorReport,
   OutcomeReport,
+  FeaturedSchemesResponse,
 } from '@/types/api';
 
 export class ApiError extends Error {
@@ -76,6 +77,27 @@ export function sendFeedback(body: FeedbackRequest): void {
   } catch {
     // swallowed
   }
+}
+
+/** Fetch the home-grid featured schemes (5 national flagships + state-specific filler).
+ * Resolves with the full response or throws an ApiError on non-2xx. */
+export async function fetchFeaturedSchemes(
+  state: string | null,
+  limit = 12,
+): Promise<FeaturedSchemesResponse> {
+  const params = new URLSearchParams();
+  if (state) params.set('state', state);
+  params.set('limit', String(limit));
+  const resp = await fetch(`${env.BACKEND_URL}/api/v2/featured?${params.toString()}`, {
+    method: 'GET',
+    signal: AbortSignal.timeout(env.REQUEST_TIMEOUT_MS),
+    headers: { Accept: 'application/json' },
+  });
+  if (!resp.ok) {
+    const { message, code } = await userFacingHttpMessage(resp);
+    throw new ApiError(resp.status, message, code);
+  }
+  return (await resp.json()) as FeaturedSchemesResponse;
 }
 
 /** Fire-and-forget. Never throws. */

@@ -1,9 +1,27 @@
-"""Qdrant retrieval — single responsibility for vector search."""
+"""Qdrant retrieval — single responsibility for vector search.
+
+Two backends share this module:
+
+  - **Legacy** (``USE_V2_RETRIEVAL=false``): the hand-curated 96-scheme cluster on
+    the original Qdrant instance, with full text + metadata in the payload. Kept
+    intact so we can roll back instantly.
+
+  - **v2** (default — ``USE_V2_RETRIEVAL=true``): the scraped ~4.6k-scheme corpus on
+    the new ``sahayaksetu`` Qdrant cluster. Lean payload (slug, name, level, state,
+    categories, tags, short_summary); the rich document text needed by grounding /
+    agent / eligibility lives in ``sahayaksetu.schemes`` Mongo and is fetched at
+    query time.
+
+The function ``search_schemes(query, limit)`` returns ``list[SearchResult]`` either
+way — every downstream service (grounding_service, agent_service, eligibility_service)
+consumes that shape and is unaffected by the swap.
+"""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +36,18 @@ from backend.config import (
     qdrant_client,
 )
 from backend.services.injection_guard import wrap_retrieved_chunk
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    v = os.getenv(name)
+    if v is None or not str(v).strip():
+        return default
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+
+# Default: v2-backed retrieval. Set USE_V2_RETRIEVAL=false to fall back to the
+# hand-curated cluster (useful for A/B comparisons or emergency rollback).
+USE_V2_RETRIEVAL = _env_bool("USE_V2_RETRIEVAL", default=True)
 
 logger = logging.getLogger(__name__)
 _CATALOG_PATH = Path(__file__).resolve().parents[2] / "scripts" / "data" / "schemes.json"
@@ -48,7 +78,162 @@ class SearchResult:
             self.matched_terms = []
 
 
+# --- v2 cluster (sahayaksetu Qdrant + Mongo) — keeps SearchResult shape -------------
+# The v2 cluster's payload is intentionally lean (slug + name + categories), so we
+# pair every Qdrant hit with a Mongo lookup that returns the rich text fields the
+# grounding / agent / eligibility services expect on ``SearchResult.document``.
+
+_HTTP_URL_RE = re.compile(r"https?://[^\s)\]\}'\"<>]+", re.I)
+
+
+def _derive_apply_link(mongo_doc: dict) -> str | None:
+    """Pick the most useful "apply" URL we can find in the Mongo doc.
+
+    Priority: first http URL in any application_modes process_md (usually the actual
+    portal link), then first references[].url. Falls back to None if neither yields."""
+    for mode in mongo_doc.get("application_modes") or []:
+        text = (mode or {}).get("process_md") or ""
+        m = _HTTP_URL_RE.search(text)
+        if m:
+            return m.group(0).rstrip(".,;)")
+    for ref in mongo_doc.get("references") or []:
+        url = (ref or {}).get("url")
+        if isinstance(url, str) and url.startswith(("http://", "https://")):
+            return url
+    return None
+
+
+def _derive_source_link(mongo_doc: dict) -> str:
+    """The MyScheme catalogue page is always the canonical "official info" link."""
+    return f"https://www.myscheme.gov.in/schemes/{mongo_doc.get('slug', '')}"
+
+
+def _state_availability_from_doc(mongo_doc: dict) -> str | list[str] | None:
+    level = (mongo_doc.get("level") or "").strip().lower()
+    if level == "central":
+        return "all"
+    state = mongo_doc.get("state")
+    if isinstance(state, str) and state.strip():
+        return [state.strip()]
+    return None
+
+
+def _build_doc_text(mongo_doc: dict) -> str:
+    """Assemble the long-form text that grounding / LLM prompts ingest. Order roughly
+    matches importance: brief then benefits then eligibility then docs then exclusions.
+    Capped per-section so a single overlong markdown blob doesn't dominate."""
+    parts: list[str] = []
+    name = mongo_doc.get("name") or ""
+    short = mongo_doc.get("short_title") or ""
+    header = f"{name} ({short})" if short else name
+    if header:
+        parts.append(header)
+
+    def _add(label: str, key: str, cap: int) -> None:
+        v = (mongo_doc.get(key) or "").strip()
+        if v:
+            parts.append(f"{label}: {v[:cap]}")
+
+    _add("Description", "brief_description", 800)
+    _add("Benefits", "benefits_md", 1200)
+    _add("Eligibility", "eligibility_md", 1200)
+    _add("Documents needed", "documents_required_md", 800)
+    _add("Exclusions", "exclusions_md", 600)
+    apply_modes = mongo_doc.get("application_modes") or []
+    if apply_modes:
+        ap_lines = [f"{m.get('mode', '')}: {(m.get('process_md') or '')[:300]}" for m in apply_modes if isinstance(m, dict)]
+        ap = "; ".join(line for line in ap_lines if line.strip())
+        if ap:
+            parts.append(f"How to apply: {ap}")
+    return "\n\n".join(parts)
+
+
+def _search_v2_cluster(query: str, limit: int) -> list[SearchResult]:
+    """v2 retrieval — Qdrant top-K against the new cluster, then Mongo $in fetch
+    for full docs, then map into the legacy SearchResult shape."""
+    q = (query or "").strip()
+    if not q:
+        return []
+    try:
+        from backend.services.v2_retrieval import V2_QDRANT_COLLECTION, _embed, _get_qclient
+        from qdrant_client.models import QuantizationSearchParams, SearchParams
+    except Exception:
+        logger.warning("v2_retrieval_import_failed", exc_info=True)
+        return []
+
+    try:
+        qvec = _embed(q)
+        res = _get_qclient().query_points(
+            collection_name=V2_QDRANT_COLLECTION,
+            query=qvec,
+            limit=max(1, int(limit)),
+            with_payload=True,
+            search_params=SearchParams(
+                quantization=QuantizationSearchParams(rescore=True),
+            ),
+        )
+    except Exception:
+        logger.warning("v2_qdrant_query_failed", exc_info=True)
+        return []
+
+    hits = list(res.points)
+    if not hits:
+        return []
+
+    # Batch-fetch the full docs from Mongo in one round-trip.
+    slugs = [h.payload.get("slug") for h in hits if h.payload and h.payload.get("slug")]
+    docs_by_slug: dict[str, dict] = {}
+    try:
+        from backend.services.mongo_service import _get_client, MONGODB_DB
+        # Mongo client here is sync (motor is async); we deliberately use the underlying
+        # PyMongo via a small helper so this stays callable from the sync search_schemes
+        # entry point. The existing app calls search_schemes from sync context too.
+        import pymongo
+        # Reuse the same connection string the rest of the app uses.
+        from backend.config import MONGODB_URL
+        sync_client = pymongo.MongoClient(MONGODB_URL, serverSelectionTimeoutMS=3000)
+        coll = sync_client[MONGODB_DB]["schemes"]
+        for d in coll.find({"slug": {"$in": slugs}}):
+            docs_by_slug[d["slug"]] = d
+    except Exception:
+        logger.warning("v2_mongo_fetch_failed", exc_info=True)
+
+    results: list[SearchResult] = []
+    for h in hits:
+        p = h.payload or {}
+        slug = p.get("slug") or ""
+        mongo_doc = docs_by_slug.get(slug, {})
+        # If Mongo missed (rare race during ingest), fall back to the lean payload's
+        # short_summary so the LLM still has *something* to ground on.
+        document = _build_doc_text(mongo_doc) if mongo_doc else (p.get("short_summary") or "")
+        scheme_name = p.get("name") or mongo_doc.get("name") or "Scheme"
+        results.append(
+            SearchResult(
+                scheme_name=scheme_name,
+                document=document,
+                score=float(h.score or 0.0),
+                apply_link=_derive_apply_link(mongo_doc) if mongo_doc else None,
+                source=_derive_source_link(mongo_doc or {"slug": slug}),
+                vector_score=float(h.score or 0.0),
+                keyword_score=0.0,
+                blended_score=float(h.score or 0.0),
+                last_verified_at=(mongo_doc.get("scraped_at") or mongo_doc.get("ingested_at") or "").split("T", 1)[0] or None,
+                state_availability=_state_availability_from_doc(mongo_doc) if mongo_doc else None,
+                matched_terms=_matched_terms(q, document, scheme=scheme_name),
+            )
+        )
+    return results
+
+
 def search_schemes(query: str, limit: int = 3) -> list[SearchResult]:
+    if USE_V2_RETRIEVAL:
+        results = _search_v2_cluster(query, limit)
+        if results:
+            return results
+        # If v2 returned nothing (cluster unreachable, query empty after filtering),
+        # fall through to legacy path so the existing demo never goes silent.
+        logger.info("v2_retrieval_empty_falling_back_to_legacy", extra={"query_prefix": (query or "")[:120]})
+
     try:
         raw_results = qdrant_client.query(
             collection_name=QDRANT_COLLECTION,

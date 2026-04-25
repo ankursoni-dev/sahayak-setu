@@ -53,3 +53,24 @@ export interface OutcomeReport {
   session_user_id: string | null;
   note?: string | null;
 }
+
+/** Shape returned by GET /api/v2/featured — lean enough to feed straight into <SchemeCard>. */
+export interface FeaturedSchemeItem {
+  id: string;
+  slug: string;
+  name: string;
+  ministry: string;
+  category: string;
+  summary: string;
+  benefit: string;
+  eligibility: string;
+  applyLink: string;
+  sourceLink: string;
+  emoji: string;
+  level: string | null;
+  state: string | null;
+}
+
+export interface FeaturedSchemesResponse {
+  items: FeaturedSchemeItem[];
+}

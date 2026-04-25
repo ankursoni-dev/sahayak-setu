@@ -18,6 +18,7 @@ from backend.config import (
     API_RETRY_MAX_DELAY_S,
     MAX_PROMPT_CHARS,
     OPENROUTER_MODEL,
+    RACE_MODELS,
     REWRITE_QUERY_TIMEOUT_S,
     openrouter_client,
 )
@@ -259,46 +260,106 @@ def _trim_messages_for_budget(messages: list[dict], max_chars: int = MAX_PROMPT_
     return out
 
 
-async def _openrouter_complete(messages: list[dict], task: str = "generation") -> tuple[str, str]:
-    """OpenRouter completion via OpenAI-compatible API. Raises on failure."""
+async def _call_model(
+    messages: list[dict],
+    model: str,
+    *,
+    task: str = "generation",
+    temperature: float = 0.2,
+    response_format: dict | None = None,
+    timeout_s: float | None = None,
+) -> tuple[str, str]:
+    """Call one specific OpenRouter model. Raises on any failure."""
     if openrouter_client is None:
         raise RuntimeError("openrouter_unconfigured")
     msgs = _trim_messages_for_budget(messages)
+    kwargs: dict = {"model": model, "messages": msgs, "temperature": temperature}
+    if response_format:
+        kwargs["response_format"] = response_format
     response = await with_timeout(
-        asyncio.to_thread(
-            openrouter_client.chat.completions.create,
-            model=OPENROUTER_MODEL,
-            messages=msgs,
-            temperature=0.2,
-        ),
-        seconds=LLM_CALL_TIMEOUT_S,
-        step="llm_generate_openrouter",
+        asyncio.to_thread(openrouter_client.chat.completions.create, **kwargs),
+        seconds=timeout_s or LLM_CALL_TIMEOUT_S,
+        step=f"llm_{model}",
     )
     text = (response.choices[0].message.content or "").strip()
     usage = getattr(response, "usage", None)
     if usage is not None:
         log_usage(
-            model=OPENROUTER_MODEL,
+            model=model,
             task=task,
             prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
             completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
             trace_id=trace_id_var.get(),
         )
-    return text, f"openrouter/{OPENROUTER_MODEL}"
+    return text, f"openrouter/{model}"
+
+
+async def _race_complete(
+    messages: list[dict],
+    *,
+    task: str = "generation",
+    temperature: float = 0.2,
+    response_format: dict | None = None,
+    timeout_s: float | None = None,
+) -> tuple[str, str]:
+    """Fire all RACE_MODELS simultaneously; return the first successful response.
+
+    Losers are cancelled immediately once a winner is found. If one model errors
+    the race continues until another succeeds or all fail.
+    """
+    models = RACE_MODELS or [OPENROUTER_MODEL]
+    if len(models) == 1:
+        return await _call_model(
+            messages, models[0],
+            task=task, temperature=temperature,
+            response_format=response_format, timeout_s=timeout_s,
+        )
+
+    pending: set[asyncio.Task] = {
+        asyncio.create_task(
+            _call_model(
+                messages, m,
+                task=task, temperature=temperature,
+                response_format=response_format, timeout_s=timeout_s,
+            )
+        )
+        for m in models
+    }
+
+    result: tuple[str, str] | None = None
+    last_exc: BaseException | None = None
+
+    while pending and result is None:
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        for t in done:
+            exc = t.exception()
+            if exc is None:
+                result = t.result()
+                break
+            last_exc = exc
+            logger.warning("race_model_failed", extra={"error": str(exc)[:120]})
+
+    for t in pending:
+        t.cancel()
+
+    if result is not None:
+        logger.info("race_winner", extra={"provider": result[1], "task": task})
+        return result
+    raise last_exc or RuntimeError("all_race_models_failed")
 
 
 async def generate(messages: list[dict]) -> tuple[str, str]:
-    """Primary chat completion. Does not raise — returns a safe string if OpenRouter fails."""
+    """Primary chat completion. Does not raise — returns a safe string if all models fail."""
     try:
         return await async_retry(
-            lambda: _openrouter_complete(messages, task="generation"),
+            lambda: _race_complete(messages, task="generation", temperature=0.2),
             attempts=API_RETRY_ATTEMPTS,
             base_delay=API_RETRY_BASE_DELAY_S,
             max_delay=API_RETRY_MAX_DELAY_S,
-            step="llm_generate_openrouter",
+            step="llm_generate_race",
         )
     except Exception as e:
-        logger.error("llm_openrouter_failed", extra={"error": str(e)[:200]})
+        logger.error("llm_race_failed", extra={"error": str(e)[:200]})
     return _DEGRADED_CHAT, "unavailable"
 
 
@@ -391,7 +452,7 @@ def _flatten_prompt(messages: list[dict]) -> str:
 
 
 async def generate_json(messages: list[dict]) -> tuple[dict, str]:
-    """Structured response path — OpenRouter JSON mode."""
+    """Structured response path — race all models in JSON mode."""
 
     def _parse_dict(raw: str) -> dict:
         data = json.loads((raw or "").strip())
@@ -399,21 +460,14 @@ async def generate_json(messages: list[dict]) -> tuple[dict, str]:
             raise ValueError("Structured response is not a JSON object")
         return data
 
-    msgs = _trim_messages_for_budget(messages)
     try:
-        response = await with_timeout(
-            asyncio.to_thread(
-                openrouter_client.chat.completions.create,
-                model=OPENROUTER_MODEL,
-                messages=msgs,
-                response_format={"type": "json_object"},
-                temperature=0.1,
-            ),
-            seconds=LLM_CALL_TIMEOUT_S,
-            step="llm_generate_json_openrouter",
+        text, provider = await _race_complete(
+            messages,
+            task="generation_json",
+            temperature=0.1,
+            response_format={"type": "json_object"},
         )
-        data = _parse_dict(response.choices[0].message.content or "")
-        return data, f"openrouter/{OPENROUTER_MODEL}"
+        return _parse_dict(text), provider
     except Exception as e:
         logger.warning("structured_json_degraded", extra={"error": str(e)[:200]})
     return _insufficient_json_payload(), "unavailable"
@@ -439,21 +493,17 @@ async def generate_agent_plan_json(prompt: str) -> tuple[dict, str]:
         {"role": "user", "content": prompt},
     ]
     try:
-        response = await with_timeout(
-            asyncio.to_thread(
-                openrouter_client.chat.completions.create,
-                model=OPENROUTER_MODEL,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.15,
-            ),
-            seconds=AGENT_PLAN_CALL_TIMEOUT_S,
-            step="llm_agent_plan_openrouter",
+        text, provider = await _race_complete(
+            messages,
+            task="agent_plan",
+            temperature=0.15,
+            response_format={"type": "json_object"},
+            timeout_s=AGENT_PLAN_CALL_TIMEOUT_S,
         )
-        return _parse_dict(response.choices[0].message.content or ""), f"openrouter/{OPENROUTER_MODEL}"
+        return _parse_dict(text), provider
     except Exception as e:
         logger.warning("agent_plan_json_failed", extra={"error": str(e)[:200]})
-    return {}, f"openrouter/{OPENROUTER_MODEL}"
+    return {}, f"openrouter/{RACE_MODELS[0] if RACE_MODELS else OPENROUTER_MODEL}"
 
 
 async def generate_json_prompt(prompt: str) -> tuple[dict, str]:

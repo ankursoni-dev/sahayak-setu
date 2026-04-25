@@ -14,6 +14,10 @@ QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001").strip()
+# Models to race for generation calls — first to respond wins, others are cancelled.
+# Set RACE_MODELS= (empty) to disable racing and use only OPENROUTER_MODEL.
+_RACE_MODELS_RAW = os.getenv("RACE_MODELS", "google/gemini-2.0-flash-001,openai/gpt-4o-mini").strip()
+RACE_MODELS: list[str] = [m.strip() for m in _RACE_MODELS_RAW.split(",") if m.strip()] or [OPENROUTER_MODEL]
 OPENROUTER_REFERRER = os.getenv("OPENROUTER_REFERRER", "https://sahayaksetu.vercel.app").strip()
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "SahayakSetu").strip()
 ENV = os.getenv("ENV", "development").strip().lower()

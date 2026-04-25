@@ -132,25 +132,28 @@ def _scheme_listing_fallback(
         "Check the official portal for full details or click any source below."
     )
 
+    # Scheme document text is English-only (scraped from myscheme.gov.in).
+    # Appending an English description to a Hindi/regional intro produces jarring
+    # code-switching. Suppress descriptions for non-English UI.
+    show_desc = lang == "en"
     bullets: list[str] = []
     for idx, r in enumerate(top, start=1):
         scheme = (r.scheme_name or "").strip() or f"Scheme {idx}"
-        # Pull a one-line summary out of the document text — first non-empty line that
-        # isn't the bare scheme name. Keep it short so the bubble stays readable.
-        doc = (r.document or "").strip()
         first_line = ""
-        for line in doc.splitlines():
-            line = line.strip(" -•").strip()
-            if not line:
-                continue
-            if line.lower().startswith(scheme.lower()):
-                continue
-            first_line = line
-            break
-        if not first_line and doc:
-            first_line = doc[:140]
-        if first_line and len(first_line) > 180:
-            first_line = first_line[:177].rstrip() + "…"
+        if show_desc:
+            doc = (r.document or "").strip()
+            for line in doc.splitlines():
+                line = line.strip(" -•").strip()
+                if not line:
+                    continue
+                if line.lower().startswith(scheme.lower()):
+                    continue
+                first_line = line
+                break
+            if not first_line and doc:
+                first_line = doc[:140]
+            if first_line and len(first_line) > 180:
+                first_line = first_line[:177].rstrip() + "…"
         bullets.append(f"[{idx}] **{scheme}** — {first_line}" if first_line else f"[{idx}] **{scheme}**")
 
     return "\n".join([intro, "", *bullets, "", outro])
@@ -336,6 +339,7 @@ async def execute_search(
             "pii_redactions": pii_hits,
         }
 
+        user_state = _user_state_from_profile(search_request.profile or {})
         relevant_results: list = []
         near_miss_results: list = []
         context = ""
@@ -348,6 +352,7 @@ async def execute_search(
                     SIMILARITY_THRESHOLD,
                     use_hybrid=HYBRID_RETRIEVAL,
                     boost_query=original_query,
+                    user_state=user_state,
                 )
             )
             _t["retrieval_ms"] = round((time.monotonic() - _t0) * 1000)
@@ -548,7 +553,6 @@ async def execute_search(
             )
             _t["plan_ms"] = round((time.monotonic() - _t0) * 1000)
 
-        user_state = _user_state_from_profile(search_request.profile or {})
         sources = [_build_scheme_source(r, user_state) for r in relevant_results]
         near_miss_sources = [_build_scheme_source(r, user_state) for r in near_miss_results]
         raw_hints = eligibility_service.hints_for_schemes(

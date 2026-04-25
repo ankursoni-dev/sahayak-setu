@@ -148,7 +148,23 @@ def _build_doc_text(mongo_doc: dict) -> str:
     return "\n\n".join(parts)
 
 
-def _search_v2_cluster(query: str, limit: int) -> list[SearchResult]:
+def _state_filter_passes(payload: dict, user_state: str) -> bool:
+    """True when the scheme is available in the user's state.
+
+    Central (level=central) schemes pass unconditionally. State-specific schemes pass
+    only when their ``state`` payload field matches the user's state (case-insensitive).
+    Unknown/missing level is treated as a pass to avoid silently hiding results.
+    """
+    level = (payload.get("level") or "").strip().lower()
+    if level == "central":
+        return True
+    if not level:
+        return True
+    state = (payload.get("state") or "").strip()
+    return state.lower() == user_state.strip().lower()
+
+
+def _search_v2_cluster(query: str, limit: int, *, user_state: str | None = None) -> list[SearchResult]:
     """v2 retrieval — Qdrant top-K against the new cluster, then Mongo $in fetch
     for full docs, then map into the legacy SearchResult shape."""
     q = (query or "").strip()
@@ -177,6 +193,13 @@ def _search_v2_cluster(query: str, limit: int) -> list[SearchResult]:
         return []
 
     hits = list(res.points)
+    if not hits:
+        return []
+
+    # Drop schemes from other states before the expensive Mongo batch fetch.
+    # Central schemes pass unconditionally; state-specific ones must match user_state.
+    if user_state:
+        hits = [h for h in hits if _state_filter_passes(h.payload or {}, user_state)]
     if not hits:
         return []
 
@@ -225,9 +248,9 @@ def _search_v2_cluster(query: str, limit: int) -> list[SearchResult]:
     return results
 
 
-def search_schemes(query: str, limit: int = 3) -> list[SearchResult]:
+def search_schemes(query: str, limit: int = 3, *, user_state: str | None = None) -> list[SearchResult]:
     if USE_V2_RETRIEVAL:
-        results = _search_v2_cluster(query, limit)
+        results = _search_v2_cluster(query, limit, user_state=user_state)
         if results:
             return results
         # If v2 returned nothing (cluster unreachable, query empty after filtering),
@@ -561,6 +584,7 @@ def retrieve_for_rag(
     *,
     use_hybrid: bool = False,
     boost_query: str | None = None,
+    user_state: str | None = None,
 ) -> tuple[list[SearchResult], list[SearchResult], str, str]:
     """
     Top confident matches (up to 3) plus up to two additional high-ranked hits
@@ -568,7 +592,7 @@ def retrieve_for_rag(
     """
     candidate_limit = RAG_VECTOR_CANDIDATE_LIMIT if use_hybrid else RAG_VECTOR_QUERY_LIMIT
     expanded_query = _expand_query_synonyms(query)
-    raw_results = search_schemes(expanded_query, limit=candidate_limit)
+    raw_results = search_schemes(expanded_query, limit=candidate_limit, user_state=user_state)
     boost_blob = f"{query}\n{boost_query or ''}"
     raw_results = merge_explicit_catalog_hits(boost_blob, raw_results)
     if use_hybrid:

@@ -43,3 +43,13 @@ export interface ErrorReport {
   language: string;
   query_prefix: string;
 }
+
+export type OutcomeValue = 'applied' | 'received' | 'rejected' | 'not_applied' | 'n/a';
+
+export interface OutcomeReport {
+  scheme: string;
+  outcome: OutcomeValue;
+  trace_id: string | null;
+  session_user_id: string | null;
+  note?: string | null;
+}

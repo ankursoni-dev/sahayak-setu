@@ -9,6 +9,7 @@ import { ModeTabs, type Mode } from '@/components/ModeTabs';
 import { ExampleChips } from '@/components/ExampleChips';
 import { ConversationFeed } from '@/components/ConversationFeed';
 import { LastQueryBanner } from '@/components/LastQueryBanner';
+import { OutcomePrompt } from '@/components/OutcomePrompt';
 import { EligibilityFinder } from '@/components/EligibilityFinder';
 import { SchemesGrid } from '@/components/SchemesGrid';
 import { SchemeSheet } from '@/components/SchemeSheet';
@@ -115,6 +116,7 @@ export default function HomePage() {
             )}
 
             <div id="conversation" className="scroll-mt-20">
+              <OutcomePrompt />
               <LastQueryBanner onAskAgain={handleTextSubmit} />
               <div className="mt-4">
                 <ConversationFeed />

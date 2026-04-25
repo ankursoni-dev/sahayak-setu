@@ -1,9 +1,12 @@
 import argparse
+import hashlib
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
@@ -12,6 +15,7 @@ load_dotenv()
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SCHEMES_PATH = SCRIPT_DIR / "data" / "schemes.json"
+COLLECTION = "sahayak_schemes"
 
 _qdrant: QdrantClient | None = None
 
@@ -34,17 +38,67 @@ def _get_qdrant() -> QdrantClient:
     return _qdrant
 
 
-def recreate_collection() -> None:
-    qdrant = _get_qdrant()
-    print("[INFO] Recreating collections with Memory-Safe support...")
-    if qdrant.collection_exists("sahayak_schemes"):
-        qdrant.delete_collection("sahayak_schemes")
+def _is_local_host(qdrant_url: str) -> bool:
+    try:
+        host = (urlparse(qdrant_url).hostname or "").lower()
+    except Exception:
+        return False
+    return host in {"localhost", "127.0.0.1", "::1", "qdrant"}
 
+
+def _confirm_destructive(qdrant_url: str, *, assume_yes: bool) -> None:
+    if assume_yes or _is_local_host(qdrant_url):
+        return
+    print(f"[WARN] About to DROP collection '{COLLECTION}' at {qdrant_url}.")
+    print("       This deletes every chunk in the production knowledge base.")
+    answer = input("       Type 'yes' to continue: ").strip().lower()
+    if answer != "yes":
+        print("[ABORT] Destructive ingest cancelled.")
+        sys.exit(1)
+
+
+def _collection_exists(qdrant) -> bool:
+    """Compatibility shim — qdrant-client 1.7.x has no ``collection_exists``."""
+    if hasattr(qdrant, "collection_exists"):
+        return qdrant.collection_exists(COLLECTION)
+    try:
+        qdrant.get_collection(COLLECTION)
+        return True
+    except Exception:
+        return False
+
+
+def recreate_collection() -> None:
+    import time
+    qdrant = _get_qdrant()
+    print("[INFO] Dropping existing collection ...")
+    # Best-effort delete — ignore "doesn't exist" errors.
+    try:
+        qdrant.delete_collection(COLLECTION)
+    except Exception as e:
+        if "not found" not in str(e).lower() and "doesn't exist" not in str(e).lower():
+            print(f"   [WARN] delete_collection raised: {e}")
+    # Qdrant Cloud is eventually consistent. Wait for the delete to settle so the
+    # subsequent qdrant.add() (which auto-creates) doesn't race the deletion.
+    for _ in range(20):
+        if not _collection_exists(qdrant):
+            break
+        time.sleep(0.5)
+    # Don't pre-create here — qdrant-client 1.7.x's FastEmbed `add()` wrapper does
+    # its own create_collection internally and 409s if we beat it to it. Letting
+    # add() handle creation is the path of least resistance with this client version.
+    print(f"   [SUCCESS] Collection cleared; ingest will recreate.")
+
+
+def ensure_collection() -> None:
+    qdrant = _get_qdrant()
+    if _collection_exists(qdrant):
+        return
     qdrant.create_collection(
-        collection_name="sahayak_schemes",
+        collection_name=COLLECTION,
         vectors_config=qdrant.get_fastembed_vector_params(),
     )
-    print("   [SUCCESS] Created: sahayak_schemes")
+    print(f"   [SUCCESS] Created (was missing): {COLLECTION}")
 
 
 def load_scheme_data() -> list[dict[str, Any]]:
@@ -55,7 +109,13 @@ def load_scheme_data() -> list[dict[str, Any]]:
         return json.load(f)
 
 
-def run_ingestion(*, dry_run: bool = False) -> None:
+def _deterministic_id(text: str) -> str:
+    """Stable UUID derived from chunk text — re-ingest is idempotent (upsert by ID)."""
+    digest = hashlib.sha256(text.encode("utf-8")).digest()[:16]
+    return str(uuid.UUID(bytes=digest))
+
+
+def run_ingestion(*, dry_run: bool = False, recreate: bool = False, assume_yes: bool = False) -> None:
     data = load_scheme_data()
     documents = [item["text"] for item in data]
     metadata = [item["metadata"] for item in data]
@@ -71,15 +131,24 @@ def run_ingestion(*, dry_run: bool = False) -> None:
             print(f"   {chunk[:200]}{'...' if len(chunk) > 200 else ''}")
         return
 
+    qdrant_url = os.getenv("QDRANT_URL", "")
+    print(f"[INFO] Target: {qdrant_url}")
+
     qdrant = _get_qdrant()
-    recreate_collection()
-    print(f"\n[INFO] Ingesting {len(data)} definitive chunks...")
+    if recreate:
+        _confirm_destructive(qdrant_url, assume_yes=assume_yes)
+        recreate_collection()
+    else:
+        ensure_collection()
+
+    print(f"\n[INFO] Ingesting {len(data)} chunks ({'recreate' if recreate else 'upsert'})...")
     qdrant.add(
-        collection_name="sahayak_schemes",
+        collection_name=COLLECTION,
         documents=documents,
         metadata=metadata,
+        ids=[_deterministic_id(t) for t in documents],
     )
-    print("\n[SUCCESS] 38-Chunk Honesty Repository Ready!")
+    print("\n[SUCCESS] Repository ready!")
 
 
 def main() -> None:
@@ -89,8 +158,18 @@ def main() -> None:
         action="store_true",
         help="Print chunk count and first 3 chunks without Qdrant (no env required).",
     )
+    parser.add_argument(
+        "--recreate",
+        action="store_true",
+        help="Drop the collection before ingest. DESTRUCTIVE — prompts for confirmation on non-local hosts.",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompt for --recreate against non-local hosts.",
+    )
     args = parser.parse_args()
-    run_ingestion(dry_run=args.dry_run)
+    run_ingestion(dry_run=args.dry_run, recreate=args.recreate, assume_yes=args.yes)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,11 @@
 import { env } from './env';
-import type { SearchRequest, SearchResponse, FeedbackRequest, ErrorReport } from '@/types/api';
+import type {
+  SearchRequest,
+  SearchResponse,
+  FeedbackRequest,
+  ErrorReport,
+  OutcomeReport,
+} from '@/types/api';
 
 export class ApiError extends Error {
   status: number;
@@ -63,6 +69,19 @@ export async function searchSchemes(body: SearchRequest): Promise<SearchCallResu
 export function sendFeedback(body: FeedbackRequest): void {
   try {
     void fetch(`${env.BACKEND_URL}/api/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => undefined);
+  } catch {
+    // swallowed
+  }
+}
+
+/** Fire-and-forget. Never throws. */
+export function reportOutcome(body: OutcomeReport): void {
+  try {
+    void fetch(`${env.BACKEND_URL}/api/outcome`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

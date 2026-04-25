@@ -35,6 +35,17 @@ class SearchResult:
     vector_score: float = 0.0
     keyword_score: float = 0.0
     blended_score: float = 0.0
+    last_verified_at: str | None = None
+    # "all" for nationwide central schemes, list[str] of state names for state-specific,
+    # None when unknown. Frontend renders a corresponding pill on each scheme card.
+    state_availability: str | list[str] | None = None
+    # Tokens that overlapped between the user query and this chunk — drives the
+    # qualitative "Why this match" explainer (F7) without exposing raw similarity scores.
+    matched_terms: list[str] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.matched_terms is None:
+            self.matched_terms = []
 
 
 def search_schemes(query: str, limit: int = 3) -> list[SearchResult]:
@@ -55,6 +66,9 @@ def search_schemes(query: str, limit: int = 3) -> list[SearchResult]:
                     vector_score=float(result.score),
                     keyword_score=0.0,
                     blended_score=float(result.score),
+                    last_verified_at=result.metadata.get("last_verified_at"),
+                    state_availability=result.metadata.get("state_availability"),
+                    matched_terms=_matched_terms(query, result.document or "", scheme=result.metadata.get("scheme", "")),
                 )
                 for result in raw_results
             ]
@@ -128,10 +142,47 @@ def _catalog_keyword_search(query: str, limit: int) -> list[SearchResult]:
                 vector_score=0.0,
                 keyword_score=score,
                 blended_score=score,
+                last_verified_at=meta.get("last_verified_at"),
+                state_availability=meta.get("state_availability"),
+                matched_terms=_matched_terms(query, text, scheme=scheme),
             )
         )
     scored.sort(key=lambda x: x.score, reverse=True)
     return _dedupe_by_scheme(scored)[:limit]
+
+
+# Stop tokens for the "matched_terms" explainer — drop fillers so users see signal words.
+_EXPLAIN_STOP = {
+    "the", "and", "for", "with", "from", "this", "that", "what", "which", "have", "has",
+    "are", "is", "of", "to", "in", "a", "an", "or", "be", "i", "me", "my", "we", "you",
+    "your", "tell", "about", "how", "can", "do", "does", "show", "find", "get", "give",
+    "want", "need", "scheme", "schemes", "yojana", "yojna", "please", "kindly",
+}
+
+
+def _matched_terms(query: str, document: str, *, scheme: str = "") -> list[str]:
+    """Pick a few qualitative tokens that overlap query and document — used for the
+    public 'Why this match' explainer. Bounded to 4 items so the UI can render inline."""
+    q_tokens = [t for t in _query_tokens(query) if t not in _EXPLAIN_STOP]
+    if not q_tokens:
+        return []
+    d_tokens = _query_tokens(document) | _query_tokens(scheme)
+    if not d_tokens:
+        return []
+    seen: set[str] = set()
+    matches: list[str] = []
+    for t in q_tokens:
+        if t in d_tokens and t not in seen:
+            seen.add(t)
+            matches.append(t)
+        if len(matches) >= 4:
+            break
+    return matches
+
+
+def matched_terms_for_query(query: str, document: str, scheme: str = "") -> list[str]:
+    """Public re-export so search_execution can recompute when stitching responses."""
+    return _matched_terms(query, document, scheme=scheme)
 
 
 def _normalize(scores: list[float]) -> list[float]:
@@ -195,6 +246,12 @@ def _catalog_search_result_for_slug(slug: str) -> SearchResult | None:
             vector_score=0.78,
             keyword_score=0.78,
             blended_score=0.78,
+            last_verified_at=meta.get("last_verified_at"),
+            state_availability=meta.get("state_availability"),
+            # matched_terms is intentionally left empty here — the slug-based catalog
+            # boost path doesn't have the user's original query in scope, so we'd be
+            # guessing. The hybrid rerank step (when enabled) recomputes it; otherwise
+            # the explainer pill simply doesn't render for these spliced results.
         )
     return None
 
@@ -260,6 +317,12 @@ def _hybrid_rerank(query: str, results: list[SearchResult]) -> list[SearchResult
                 vector_score=vector_norm[i],
                 keyword_score=keyword_norm[i],
                 blended_score=blended,
+                # Preserve metadata-derived fields (F4 freshness, F6 state availability)
+                # and the per-query explainer tokens (F7) — without these the rerank
+                # silently strips everything downstream depends on.
+                last_verified_at=r.last_verified_at,
+                state_availability=r.state_availability,
+                matched_terms=list(r.matched_terms or []),
             )
         )
     reranked.sort(key=lambda x: x.score, reverse=True)

@@ -152,23 +152,7 @@ async def _classify_intent(classifier_input: str, *, conversation: bool) -> Mode
             exc,
             (raw[:500] + "…") if len(raw) > 500 else raw,
         )
-        if _welfare_heuristic_match(classifier_input):
-            logger.warning(
-                "moderation_fallback action=fail_open reason=json_parse_error_heuristic_welfare strict=%s",
-                MODERATION_STRICT,
-            )
-            return _FAIL_OPEN
-        if MODERATION_STRICT:
-            logger.warning(
-                "moderation_fallback action=fail_closed reason=json_parse_error strict=%s",
-                MODERATION_STRICT,
-            )
-            return _FAIL_CLOSED
-        logger.warning(
-            "moderation_fallback action=fail_open reason=json_parse_error strict=%s",
-            MODERATION_STRICT,
-        )
-        return _FAIL_OPEN
+        return _strict_aware_fallback(classifier_input, reason="json_parse_error")
     except Exception as exc:
         logger.warning(
             "moderation_call_error strict=%s conversation=%s error=%s",
@@ -177,23 +161,38 @@ async def _classify_intent(classifier_input: str, *, conversation: bool) -> Mode
             exc,
             exc_info=True,
         )
-        if _welfare_heuristic_match(classifier_input):
-            logger.warning(
-                "moderation_fallback action=fail_open reason=moderation_call_error_heuristic_welfare strict=%s",
-                MODERATION_STRICT,
-            )
-            return _FAIL_OPEN
-        if MODERATION_STRICT:
-            logger.warning(
-                "moderation_fallback action=fail_closed reason=moderation_call_error strict=%s",
-                MODERATION_STRICT,
-            )
-            return _FAIL_CLOSED
+        return _strict_aware_fallback(classifier_input, reason="moderation_call_error")
+
+
+def _strict_aware_fallback(classifier_input: str, *, reason: str) -> ModerationResult:
+    """
+    Fallback policy when the classifier raises:
+      - MODERATION_STRICT=true  -> fail closed regardless of heuristic, so an attacker
+                                   cannot dodge strict mode by including a welfare
+                                   keyword in an injection payload.
+      - MODERATION_STRICT=false -> fail open if the input looks like a welfare query,
+                                   otherwise still fail open (keeps dev UX permissive).
+    """
+    if MODERATION_STRICT:
         logger.warning(
-            "moderation_fallback action=fail_open reason=moderation_call_error strict=%s",
+            "moderation_fallback action=fail_closed reason=%s strict=%s",
+            reason,
+            MODERATION_STRICT,
+        )
+        return _FAIL_CLOSED
+    if _welfare_heuristic_match(classifier_input):
+        logger.warning(
+            "moderation_fallback action=fail_open reason=%s_heuristic_welfare strict=%s",
+            reason,
             MODERATION_STRICT,
         )
         return _FAIL_OPEN
+    logger.warning(
+        "moderation_fallback action=fail_open reason=%s strict=%s",
+        reason,
+        MODERATION_STRICT,
+    )
+    return _FAIL_OPEN
 
 
 async def check(query: str, language: str) -> ModerationResult:  # noqa: ARG001 — language reserved for future heuristics

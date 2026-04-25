@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -50,13 +51,19 @@ _URL_RE = re.compile(r"https?://\S+")
 _DATE_RE = re.compile(r"\b(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4})\b")
 
 # Lazy-load the embedder on first use so startup is not blocked by a model download.
+# The lock guards against two concurrent requests each kicking off the (slow, ~50MB)
+# model download — without it, both threads see _EMBEDDER is None and race.
 _EMBEDDER: TextEmbedding | None = None
+_EMBEDDER_LOCK = threading.Lock()
 
 
 def _get_embedder() -> TextEmbedding:
     global _EMBEDDER
-    if _EMBEDDER is None:
-        _EMBEDDER = TextEmbedding("BAAI/bge-small-en-v1.5")
+    if _EMBEDDER is not None:
+        return _EMBEDDER
+    with _EMBEDDER_LOCK:
+        if _EMBEDDER is None:
+            _EMBEDDER = TextEmbedding("BAAI/bge-small-en-v1.5")
     return _EMBEDDER
 
 

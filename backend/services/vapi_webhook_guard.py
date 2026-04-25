@@ -130,6 +130,8 @@ async def reserve_vapi_webhook_idempotency(
     from pymongo.errors import DuplicateKeyError
     from backend.services.mongo_service import db
 
+    from backend.config import IS_PRODUCTION
+
     material = _webhook_dedupe_material(parsed, raw_body)
     try:
         await db().webhook_nonces.insert_one({"_id": material, "ts": datetime.now(timezone.utc)})
@@ -138,4 +140,7 @@ async def reserve_vapi_webhook_idempotency(
         return False
     except Exception:
         logger.warning("vapi_webhook_dedupe_mongo_failed", exc_info=True)
-        return True
+        # Mongo unavailable: treat as replay in production (conservative — drop the
+        # webhook rather than risk processing a duplicate). Dev keeps fail-open so
+        # local-only setups without Mongo can still exercise the path.
+        return not IS_PRODUCTION

@@ -13,10 +13,16 @@ router = APIRouter(tags=["feedback"])
 logger = logging.getLogger(__name__)
 
 
+_TRACE_ID_PATTERN = r"^[A-Za-z0-9_-]{0,64}$"
+_SESSION_ID_PATTERN = r"^[A-Za-z0-9_:.\-]{0,128}$"
+
+
 class FeedbackRequest(BaseModel):
     value: str = Field(..., pattern="^(up|down)$")
-    trace_id: str | None = Field(default=None, max_length=64)
-    session_user_id: str | None = Field(default=None, max_length=128)
+    trace_id: str | None = Field(default=None, max_length=64, pattern=_TRACE_ID_PATTERN)
+    session_user_id: str | None = Field(
+        default=None, max_length=128, pattern=_SESSION_ID_PATTERN
+    )
     answer_preview: str | None = Field(default=None, max_length=200)
     query_preview: str | None = Field(default=None, max_length=100)
 
@@ -26,7 +32,7 @@ class FeedbackRequest(BaseModel):
     summary="Record user 👍/👎 reaction",
     description="Stores reaction in MongoDB feedback collection for offline quality analysis.",
 )
-@limiter.limit("20/minute")
+@limiter.limit("5/minute;50/hour")
 async def handle_feedback(request: Request, body: FeedbackRequest = Body(...)):
     try:
         await db().feedback.insert_one({

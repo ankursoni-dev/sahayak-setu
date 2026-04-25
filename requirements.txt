@@ -1,6 +1,6 @@
 fastapi==0.115.0
 openai==1.51.0
-qdrant-client==1.7.3
+qdrant-client>=1.12,<2.0
 fastembed>=0.8.0
 python-dotenv==1.0.1
 uvicorn==0.30.6

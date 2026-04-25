@@ -80,6 +80,51 @@ def _sanitize_profile(profile: dict) -> dict:
     return clean
 
 
+def _user_state_from_profile(profile: dict) -> str | None:
+    state = profile.get("state") if isinstance(profile, dict) else None
+    if not isinstance(state, str):
+        return None
+    cleaned = state.strip()
+    return cleaned or None
+
+
+def _state_match(user_state: str | None, availability) -> str | None:
+    """Compare a user's home state against a scheme's state_availability metadata.
+
+    Returns:
+      - None when the user hasn't supplied a state (no pill rendered)
+      - "available"     when the scheme runs nationwide or in the user's state
+      - "not_available" when the scheme is state-specific and excludes the user's state
+      - "unknown_state" when the scheme has no availability data
+    """
+    if not user_state:
+        return None
+    if availability in (None, "", []):
+        return "unknown_state"
+    if isinstance(availability, str):
+        return "available" if availability.strip().lower() == "all" else "unknown_state"
+    if isinstance(availability, list):
+        states = {str(s).strip().lower() for s in availability if isinstance(s, str)}
+        return "available" if user_state.strip().lower() in states else "not_available"
+    return "unknown_state"
+
+
+def _build_scheme_source(result, user_state: str | None) -> SchemeSource:
+    return SchemeSource(
+        scheme=result.scheme_name,
+        score=result.score,
+        apply_link=result.apply_link,
+        source=result.source,
+        confidence_label=retrieval_service.confidence_label_for_score(result.score),
+        cta_label=retrieval_service.cta_label_for_score(result.score),
+        preview_text=retrieval_service.preview_snippet_from_document(result.document),
+        last_verified_at=getattr(result, "last_verified_at", None),
+        state_availability=getattr(result, "state_availability", None),
+        state_match=_state_match(user_state, getattr(result, "state_availability", None)),
+        matched_terms=list(getattr(result, "matched_terms", []) or []),
+    )
+
+
 def _confidence_bucket(top_score: float) -> str:
     if top_score > 0.6:
         return "high"
@@ -409,30 +454,9 @@ async def execute_search(
             )
             _t["plan_ms"] = round((time.monotonic() - _t0) * 1000)
 
-        sources = [
-            SchemeSource(
-                scheme=result.scheme_name,
-                score=result.score,
-                apply_link=result.apply_link,
-                source=result.source,
-                confidence_label=retrieval_service.confidence_label_for_score(result.score),
-                cta_label=retrieval_service.cta_label_for_score(result.score),
-                preview_text=retrieval_service.preview_snippet_from_document(result.document),
-            )
-            for result in relevant_results
-        ]
-        near_miss_sources = [
-            SchemeSource(
-                scheme=result.scheme_name,
-                score=result.score,
-                apply_link=result.apply_link,
-                source=result.source,
-                confidence_label=retrieval_service.confidence_label_for_score(result.score),
-                cta_label=retrieval_service.cta_label_for_score(result.score),
-                preview_text=retrieval_service.preview_snippet_from_document(result.document),
-            )
-            for result in near_miss_results
-        ]
+        user_state = _user_state_from_profile(search_request.profile or {})
+        sources = [_build_scheme_source(r, user_state) for r in relevant_results]
+        near_miss_sources = [_build_scheme_source(r, user_state) for r in near_miss_results]
         raw_hints = eligibility_service.hints_for_schemes(
             search_request.profile or {},
             relevant_results,

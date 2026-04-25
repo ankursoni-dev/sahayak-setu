@@ -110,6 +110,11 @@ export function useSearch() {
         payload.near_miss_sources.forEach((s) => s.scheme && schemes.push(s.scheme));
         if (schemes.length) state.recordSchemes(schemes);
 
+        // Track for the F8 outcome prompt — only the *primary* sources, not the
+        // near-misses, so we don't ask "did you apply?" for low-confidence matches.
+        const primarySchemes = payload.sources.map((s) => s.scheme).filter(Boolean);
+        if (primarySchemes.length) state.recordPendingOutcomes(primarySchemes, traceId);
+
         if (opts.onAnswer) opts.onAnswer(normalisedPayload);
         else state.setStatus('Ready', 'green');
       } catch (err) {

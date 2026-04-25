@@ -5,7 +5,9 @@
       "scheme": "PM-KISAN",
       "category": "Agriculture",
       "apply_link": "https://pmkisan.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-kisan"
+      "source": "https://www.myscheme.gov.in/schemes/pm-kisan",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -14,7 +16,9 @@
       "scheme": "KCC",
       "category": "Agriculture",
       "apply_link": "https://mkisan.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/kisan-credit-card-kcc"
+      "source": "https://www.myscheme.gov.in/schemes/kisan-credit-card-kcc",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -23,7 +27,9 @@
       "scheme": "PMFBY",
       "category": "Agriculture",
       "apply_link": "https://pmfby.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmfby"
+      "source": "https://www.myscheme.gov.in/schemes/pmfby",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -32,7 +38,9 @@
       "scheme": "RKVY",
       "category": "Agriculture",
       "apply_link": "https://agricoop.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/rashtriya-krishi-vikas-yojana-rkvy-raftar"
+      "source": "https://www.myscheme.gov.in/schemes/rashtriya-krishi-vikas-yojana-rkvy-raftar",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -41,7 +49,9 @@
       "scheme": "Soil Health Card",
       "category": "Agriculture",
       "apply_link": "https://soilhealth.dac.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/soil-health-card-scheme"
+      "source": "https://www.myscheme.gov.in/schemes/soil-health-card-scheme",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -50,7 +60,9 @@
       "scheme": "PM Kusum",
       "category": "Agriculture",
       "apply_link": "https://mnre.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmkusum"
+      "source": "https://www.myscheme.gov.in/schemes/pmkusum",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -59,7 +71,9 @@
       "scheme": "PM-KMY",
       "category": "Agriculture",
       "apply_link": "https://maandhan.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-kisan-maandhan-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-kisan-maandhan-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -68,7 +82,9 @@
       "scheme": "National Livestock Mission",
       "category": "Agriculture",
       "apply_link": "https://nlm.udyamimitra.in/",
-      "source": "https://www.myscheme.gov.in/schemes/national-livestock-mission"
+      "source": "https://www.myscheme.gov.in/schemes/national-livestock-mission",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -77,7 +93,9 @@
       "scheme": "Ayushman Bharat",
       "category": "Health",
       "apply_link": "https://pmjay.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmjay"
+      "source": "https://www.myscheme.gov.in/schemes/pmjay",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -86,7 +104,9 @@
       "scheme": "Ayushman Card",
       "category": "Health",
       "apply_link": "https://beneficiary.nha.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmjay"
+      "source": "https://www.myscheme.gov.in/schemes/pmjay",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -95,7 +115,9 @@
       "scheme": "Jan Aushadhi",
       "category": "Health",
       "apply_link": "https://janaushadhi.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-jan-aushadhi-pariyojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-jan-aushadhi-pariyojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -104,7 +126,9 @@
       "scheme": "Indradhanush",
       "category": "Health",
       "apply_link": "https://www.mohfw.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mission-indradhanush"
+      "source": "https://www.myscheme.gov.in/schemes/mission-indradhanush",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -113,7 +137,9 @@
       "scheme": "JSY",
       "category": "Health",
       "apply_link": "https://nhm.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/janani-suraksha-yojana-jsy"
+      "source": "https://www.myscheme.gov.in/schemes/janani-suraksha-yojana-jsy",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -122,7 +148,9 @@
       "scheme": "PMMVY",
       "category": "Women & Children",
       "apply_link": "https://pmmvy.wcd.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmmvy"
+      "source": "https://www.myscheme.gov.in/schemes/pmmvy",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -131,7 +159,9 @@
       "scheme": "BBBP",
       "category": "Women & Children",
       "apply_link": "https://www.wcd.nic.in/bbbp-schemes",
-      "source": "https://www.myscheme.gov.in/schemes/bbbp"
+      "source": "https://www.myscheme.gov.in/schemes/bbbp",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -140,7 +170,9 @@
       "scheme": "SSY",
       "category": "Women & Children",
       "apply_link": "https://www.indiapost.gov.in/Financial/Pages/Content/SSY.aspx",
-      "source": "https://www.myscheme.gov.in/schemes/sukanya-samriddhi-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/sukanya-samriddhi-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -149,7 +181,9 @@
       "scheme": "ICDS/Anganwadi",
       "category": "Women & Children",
       "apply_link": "https://wcd.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/icds"
+      "source": "https://www.myscheme.gov.in/schemes/icds",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -158,7 +192,9 @@
       "scheme": "PMAY-U",
       "category": "Housing",
       "apply_link": "https://pmaymis.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmay-u"
+      "source": "https://www.myscheme.gov.in/schemes/pmay-u",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -167,7 +203,9 @@
       "scheme": "PMAY-G",
       "category": "Housing",
       "apply_link": "https://pmayg.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmay-g"
+      "source": "https://www.myscheme.gov.in/schemes/pmay-g",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -176,7 +214,9 @@
       "scheme": "PM Surya Ghar",
       "category": "Energy",
       "apply_link": "https://pmsuryaghar.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-surya-ghar-muft-bijli-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-surya-ghar-muft-bijli-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -185,7 +225,9 @@
       "scheme": "Ujjwala",
       "category": "Energy",
       "apply_link": "https://www.pmuy.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-ujjwala-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-ujjwala-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -194,7 +236,9 @@
       "scheme": "Saubhagya",
       "category": "Energy",
       "apply_link": "https://saubhagya.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/saubhagya"
+      "source": "https://www.myscheme.gov.in/schemes/saubhagya",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -203,7 +247,9 @@
       "scheme": "MGNREGA",
       "category": "Employment",
       "apply_link": "https://nrega.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mgnrega"
+      "source": "https://www.myscheme.gov.in/schemes/mgnrega",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -212,7 +258,9 @@
       "scheme": "PMKVY",
       "category": "Education & Employment",
       "apply_link": "https://www.pmkvyofficial.org/",
-      "source": "https://www.myscheme.gov.in/schemes/pmkvy-4-0"
+      "source": "https://www.myscheme.gov.in/schemes/pmkvy-4-0",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -221,7 +269,9 @@
       "scheme": "NAPS",
       "category": "Education & Employment",
       "apply_link": "https://www.apprenticeshipindia.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/naps"
+      "source": "https://www.myscheme.gov.in/schemes/naps",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -230,7 +280,9 @@
       "scheme": "NRLM",
       "category": "Employment",
       "apply_link": "https://aajeevika.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/deendayal-antyodaya-yojana-national-rural-livelihoods-mission-day-nrlm"
+      "source": "https://www.myscheme.gov.in/schemes/deendayal-antyodaya-yojana-national-rural-livelihoods-mission-day-nrlm",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -239,7 +291,9 @@
       "scheme": "Mudra",
       "category": "Entrepreneurship",
       "apply_link": "https://www.mudra.org.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-mudra-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-mudra-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -248,7 +302,9 @@
       "scheme": "Vishwakarma",
       "category": "Entrepreneurship",
       "apply_link": "https://pmvishwakarma.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-vishwakarma"
+      "source": "https://www.myscheme.gov.in/schemes/pm-vishwakarma",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -257,7 +313,9 @@
       "scheme": "SVANidhi",
       "category": "Entrepreneurship",
       "apply_link": "https://pmsvanidhi.mohua.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-svanidhi"
+      "source": "https://www.myscheme.gov.in/schemes/pm-svanidhi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -266,7 +324,9 @@
       "scheme": "Stand-Up India",
       "category": "Entrepreneurship",
       "apply_link": "https://www.standupmitra.in/",
-      "source": "https://www.myscheme.gov.in/schemes/stand-up-india"
+      "source": "https://www.myscheme.gov.in/schemes/stand-up-india",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -275,7 +335,9 @@
       "scheme": "Startup India",
       "category": "Entrepreneurship",
       "apply_link": "https://www.startupindia.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/startup-india"
+      "source": "https://www.myscheme.gov.in/schemes/startup-india",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -284,7 +346,9 @@
       "scheme": "PMFME",
       "category": "Entrepreneurship",
       "apply_link": "https://pmfme.mofpi.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmfme"
+      "source": "https://www.myscheme.gov.in/schemes/pmfme",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -293,7 +357,9 @@
       "scheme": "Jan Dhan",
       "category": "Financial Inclusion",
       "apply_link": "https://www.pmjdy.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pradhan-mantri-jan-dhan-yojana-pmjdy"
+      "source": "https://www.myscheme.gov.in/schemes/pradhan-mantri-jan-dhan-yojana-pmjdy",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -302,7 +368,9 @@
       "scheme": "PMSBY",
       "category": "Insurance",
       "apply_link": "https://www.jansuraksha.gov.in/Banking/PMSBY.aspx",
-      "source": "https://www.myscheme.gov.in/schemes/pm-suraksha-bima-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-suraksha-bima-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -311,7 +379,9 @@
       "scheme": "PMJJBY",
       "category": "Insurance",
       "apply_link": "https://www.jansuraksha.gov.in/Banking/PMJJBY.aspx",
-      "source": "https://www.myscheme.gov.in/schemes/pm-jeevan-jyoti-bima-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-jeevan-jyoti-bima-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -320,7 +390,9 @@
       "scheme": "APY",
       "category": "Pension",
       "apply_link": "https://www.npscra.nsdl.co.in/scheme-details.php",
-      "source": "https://www.myscheme.gov.in/schemes/atal-pension-yojana-apy"
+      "source": "https://www.myscheme.gov.in/schemes/atal-pension-yojana-apy",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -329,7 +401,9 @@
       "scheme": "PM-SYM",
       "category": "Pension",
       "apply_link": "https://maandhan.in/shramyogi",
-      "source": "https://www.myscheme.gov.in/schemes/pm-shram-yogi-maan-dhan-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-shram-yogi-maan-dhan-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -338,7 +412,9 @@
       "scheme": "NSAP",
       "category": "Social Security",
       "apply_link": "https://nsap.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/nsap"
+      "source": "https://www.myscheme.gov.in/schemes/nsap",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -347,7 +423,9 @@
       "scheme": "e-Shram",
       "category": "Social Security",
       "apply_link": "https://eshram.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/e-shram"
+      "source": "https://www.myscheme.gov.in/schemes/e-shram",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -356,7 +434,9 @@
       "scheme": "PM-GKAY",
       "category": "Food Security",
       "apply_link": "https://nfsa.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/garib-kalyan-anna-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/garib-kalyan-anna-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -365,7 +445,9 @@
       "scheme": "ONORC",
       "category": "Food Security",
       "apply_link": "https://nfsa.gov.in/portal/onorc_en",
-      "source": "https://www.myscheme.gov.in/schemes/one-nation-one-ration-card"
+      "source": "https://www.myscheme.gov.in/schemes/one-nation-one-ration-card",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -374,7 +456,9 @@
       "scheme": "PM Poshan",
       "category": "Education",
       "apply_link": "https://pmposhan.education.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-poshan-abhiyaan"
+      "source": "https://www.myscheme.gov.in/schemes/pm-poshan-abhiyaan",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -383,7 +467,9 @@
       "scheme": "NSP Scholarships",
       "category": "Education",
       "apply_link": "https://scholarships.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/nsp"
+      "source": "https://www.myscheme.gov.in/schemes/nsp",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -392,7 +478,9 @@
       "scheme": "PM eVIDYA",
       "category": "Education",
       "apply_link": "https://pmevidya.education.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-evidya"
+      "source": "https://www.myscheme.gov.in/schemes/pm-evidya",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -401,7 +489,9 @@
       "scheme": "Swachh Bharat",
       "category": "Sanitation",
       "apply_link": "https://swachhbharatmissiongramin.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/swachh-bharat-mission-gramin-i"
+      "source": "https://www.myscheme.gov.in/schemes/swachh-bharat-mission-gramin-i",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -410,7 +500,9 @@
       "scheme": "Jal Jeevan",
       "category": "Water & Sanitation",
       "apply_link": "https://jaljeevanmission.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/jal-jeevan-mission"
+      "source": "https://www.myscheme.gov.in/schemes/jal-jeevan-mission",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -419,7 +511,9 @@
       "scheme": "Digital India",
       "category": "Digital Services",
       "apply_link": "https://register.csc.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/common-service-centres-csc-2-0"
+      "source": "https://www.myscheme.gov.in/schemes/common-service-centres-csc-2-0",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -428,7 +522,9 @@
       "scheme": "Vaya Vandana",
       "category": "Pension",
       "apply_link": "https://licindia.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-vaya-vandana-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pm-vaya-vandana-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -437,7 +533,9 @@
       "scheme": "PM-CARES",
       "category": "Children",
       "apply_link": "https://www.pmcares.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-cares-for-children"
+      "source": "https://www.myscheme.gov.in/schemes/pm-cares-for-children",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -446,7 +544,9 @@
       "scheme": "SGB",
       "category": "Investment",
       "apply_link": "https://www.rbi.org.in/",
-      "source": "https://www.myscheme.gov.in/schemes/sovereign-gold-bond-scheme"
+      "source": "https://www.myscheme.gov.in/schemes/sovereign-gold-bond-scheme",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -455,7 +555,9 @@
       "scheme": "Divyangjan",
       "category": "Disability",
       "apply_link": "https://www.nhfdc.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/adip"
+      "source": "https://www.myscheme.gov.in/schemes/adip",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -464,7 +566,9 @@
       "scheme": "NFSA Ration Card",
       "category": "Food Security",
       "apply_link": "https://nfsa.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/national-food-security-act"
+      "source": "https://www.myscheme.gov.in/schemes/national-food-security-act",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -473,7 +577,9 @@
       "scheme": "PM-GKRA",
       "category": "Employment",
       "apply_link": "https://pmgkra.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-garib-kalyan-rozgar-abhiyan"
+      "source": "https://www.myscheme.gov.in/schemes/pm-garib-kalyan-rozgar-abhiyan",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -482,7 +588,9 @@
       "scheme": "NCS Portal",
       "category": "Employment",
       "apply_link": "https://www.ncs.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ncs-portal"
+      "source": "https://www.myscheme.gov.in/schemes/ncs-portal",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -491,7 +599,9 @@
       "scheme": "AB-HWC",
       "category": "Health",
       "apply_link": "https://ab-hwc.nhp.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ab-hwc"
+      "source": "https://www.myscheme.gov.in/schemes/ab-hwc",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -500,7 +610,9 @@
       "scheme": "PMRBP",
       "category": "Children",
       "apply_link": "https://rashtriyabalshakti.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmrbp"
+      "source": "https://www.myscheme.gov.in/schemes/pmrbp",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -509,7 +621,9 @@
       "scheme": "National Overseas Scholarship",
       "category": "Education",
       "apply_link": "https://nosmsje.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/national-overseas-scholarship"
+      "source": "https://www.myscheme.gov.in/schemes/national-overseas-scholarship",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -518,7 +632,9 @@
       "scheme": "SC Post-Matric Scholarship",
       "category": "Education",
       "apply_link": "https://scholarships.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/post-matric-sc"
+      "source": "https://www.myscheme.gov.in/schemes/post-matric-sc",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -527,7 +643,9 @@
       "scheme": "Pre-Matric SC/ST Scholarship",
       "category": "Education",
       "apply_link": "https://scholarships.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pre-matric-scst"
+      "source": "https://www.myscheme.gov.in/schemes/pre-matric-scst",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -536,7 +654,9 @@
       "scheme": "PMSS CAPF",
       "category": "Education",
       "apply_link": "https://ksb.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmss-capf"
+      "source": "https://www.myscheme.gov.in/schemes/pmss-capf",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -545,7 +665,9 @@
       "scheme": "AMRUT",
       "category": "Urban Development",
       "apply_link": "https://amrut.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/amrut"
+      "source": "https://www.myscheme.gov.in/schemes/amrut",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -554,7 +676,9 @@
       "scheme": "Smart Cities",
       "category": "Urban Development",
       "apply_link": "https://smartcities.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/smart-cities-mission"
+      "source": "https://www.myscheme.gov.in/schemes/smart-cities-mission",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -563,7 +687,9 @@
       "scheme": "Swachh Survekshan",
       "category": "Urban Development",
       "apply_link": "https://swachhsurvekshan.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/swachh-survekshan"
+      "source": "https://www.myscheme.gov.in/schemes/swachh-survekshan",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -572,7 +698,9 @@
       "scheme": "PMAY-CLSS",
       "category": "Housing",
       "apply_link": "https://pmaymis.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmay-clss"
+      "source": "https://www.myscheme.gov.in/schemes/pmay-clss",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -581,7 +709,9 @@
       "scheme": "DDUGJY",
       "category": "Energy",
       "apply_link": "https://www.ddugjy.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ddugjy"
+      "source": "https://www.myscheme.gov.in/schemes/ddugjy",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -590,7 +720,9 @@
       "scheme": "NHM",
       "category": "Health",
       "apply_link": "https://nhm.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/nhm"
+      "source": "https://www.myscheme.gov.in/schemes/nhm",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -599,7 +731,9 @@
       "scheme": "PM Kusum Pump",
       "category": "Agriculture",
       "apply_link": "https://mnre.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pmkusum-b"
+      "source": "https://www.myscheme.gov.in/schemes/pmkusum-b",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -608,7 +742,11 @@
       "scheme": "Gruha Lakshmi",
       "category": "State - Karnataka",
       "apply_link": "https://ahara.kar.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/gruha-lakshmi"
+      "source": "https://www.myscheme.gov.in/schemes/gruha-lakshmi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Karnataka"
+      ]
     }
   },
   {
@@ -617,7 +755,11 @@
       "scheme": "Shakti",
       "category": "State - Karnataka",
       "apply_link": "https://sevasindhuservices.karnataka.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/shakti-smart-card"
+      "source": "https://www.myscheme.gov.in/schemes/shakti-smart-card",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Karnataka"
+      ]
     }
   },
   {
@@ -626,7 +768,11 @@
       "scheme": "Anna Bhagya",
       "category": "State - Karnataka",
       "apply_link": "https://ahara.kar.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/anna-bhagya"
+      "source": "https://www.myscheme.gov.in/schemes/anna-bhagya",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Karnataka"
+      ]
     }
   },
   {
@@ -635,7 +781,11 @@
       "scheme": "Yuva Nidhi",
       "category": "State - Karnataka",
       "apply_link": "https://sevasindhu.karnataka.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/yuva-nidhi"
+      "source": "https://www.myscheme.gov.in/schemes/yuva-nidhi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Karnataka"
+      ]
     }
   },
   {
@@ -644,7 +794,11 @@
       "scheme": "Rythu Bharosa",
       "category": "State - Andhra Pradesh",
       "apply_link": "https://www.ap.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ysr-rythu-bharosa"
+      "source": "https://www.myscheme.gov.in/schemes/ysr-rythu-bharosa",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Andhra Pradesh"
+      ]
     }
   },
   {
@@ -653,7 +807,11 @@
       "scheme": "Pudhumai Penn",
       "category": "State - Tamil Nadu",
       "apply_link": "https://www.tn.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/moovalur-ramamirtham-ammaiyar-ninaivu-pudhumai-penn-thittam"
+      "source": "https://www.myscheme.gov.in/schemes/moovalur-ramamirtham-ammaiyar-ninaivu-pudhumai-penn-thittam",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Tamil Nadu"
+      ]
     }
   },
   {
@@ -662,7 +820,11 @@
       "scheme": "Magalir Urimai",
       "category": "State - Tamil Nadu",
       "apply_link": "https://www.tn.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/kalaignar-magalir-urimai-thogai-thittam"
+      "source": "https://www.myscheme.gov.in/schemes/kalaignar-magalir-urimai-thogai-thittam",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Tamil Nadu"
+      ]
     }
   },
   {
@@ -671,7 +833,11 @@
       "scheme": "Ladli Behna",
       "category": "State - Madhya Pradesh",
       "apply_link": "https://ladlibehna.mp.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ladli-behna"
+      "source": "https://www.myscheme.gov.in/schemes/ladli-behna",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Madhya Pradesh"
+      ]
     }
   },
   {
@@ -680,7 +846,11 @@
       "scheme": "CM Kisan Kalyan MP",
       "category": "State - Madhya Pradesh",
       "apply_link": "https://saara.mp.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-kisan-kalyan-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-kisan-kalyan-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Madhya Pradesh"
+      ]
     }
   },
   {
@@ -689,7 +859,11 @@
       "scheme": "Orunodoi",
       "category": "State - Assam",
       "apply_link": "https://orunodoi.assam.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/orunodoi"
+      "source": "https://www.myscheme.gov.in/schemes/orunodoi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Assam"
+      ]
     }
   },
   {
@@ -698,7 +872,11 @@
       "scheme": "Lakshmir Bhandar",
       "category": "State - West Bengal",
       "apply_link": "https://wb.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/lakshmir-bhandar"
+      "source": "https://www.myscheme.gov.in/schemes/lakshmir-bhandar",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "West Bengal"
+      ]
     }
   },
   {
@@ -707,7 +885,11 @@
       "scheme": "Swasthya Sathi",
       "category": "State - West Bengal",
       "apply_link": "https://swasthyasathi.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/swasthya-sathi"
+      "source": "https://www.myscheme.gov.in/schemes/swasthya-sathi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "West Bengal"
+      ]
     }
   },
   {
@@ -716,7 +898,11 @@
       "scheme": "Mahila Samman Delhi",
       "category": "State - Delhi",
       "apply_link": "https://delhigovt.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mahila-samman-yojana-delhi"
+      "source": "https://www.myscheme.gov.in/schemes/mahila-samman-yojana-delhi",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Delhi"
+      ]
     }
   },
   {
@@ -725,7 +911,11 @@
       "scheme": "Mahadbt Maharashtra",
       "category": "State - Maharashtra",
       "apply_link": "https://mahadbt.maharashtra.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mahadbt"
+      "source": "https://www.myscheme.gov.in/schemes/mahadbt",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Maharashtra"
+      ]
     }
   },
   {
@@ -734,7 +924,11 @@
       "scheme": "Ladki Bahin Maharashtra",
       "category": "State - Maharashtra",
       "apply_link": "https://nari.maharashtra.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-majhi-ladki-bahin-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-majhi-ladki-bahin-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Maharashtra"
+      ]
     }
   },
   {
@@ -743,7 +937,11 @@
       "scheme": "Seekho Kamao MP",
       "category": "State - Madhya Pradesh",
       "apply_link": "https://mmsky.mp.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-seekho-kamao-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/mukhyamantri-seekho-kamao-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Madhya Pradesh"
+      ]
     }
   },
   {
@@ -752,7 +950,11 @@
       "scheme": "Chiranjeevi Bima",
       "category": "State - Rajasthan",
       "apply_link": "https://chiranjeevi.rajasthan.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/chiranjeevi-swasthya-bima"
+      "source": "https://www.myscheme.gov.in/schemes/chiranjeevi-swasthya-bima",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Rajasthan"
+      ]
     }
   },
   {
@@ -761,7 +963,11 @@
       "scheme": "Indira Shahri Rozgar",
       "category": "State - Rajasthan",
       "apply_link": "https://irgy.rajasthan.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/indira-gandhi-shahri-rozgar"
+      "source": "https://www.myscheme.gov.in/schemes/indira-gandhi-shahri-rozgar",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Rajasthan"
+      ]
     }
   },
   {
@@ -770,7 +976,11 @@
       "scheme": "YSR Pension Kanuka",
       "category": "State - Andhra Pradesh",
       "apply_link": "https://www.ap.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/ysr-pension-kanuka"
+      "source": "https://www.myscheme.gov.in/schemes/ysr-pension-kanuka",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Andhra Pradesh"
+      ]
     }
   },
   {
@@ -779,7 +989,11 @@
       "scheme": "CM Yuva Udyami Bihar",
       "category": "State - Bihar",
       "apply_link": "https://udyami.bihar.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/cm-yuva-udyami-bihar"
+      "source": "https://www.myscheme.gov.in/schemes/cm-yuva-udyami-bihar",
+      "last_verified_at": "2026-04-01",
+      "state_availability": [
+        "Bihar"
+      ]
     }
   },
   {
@@ -788,7 +1002,9 @@
       "scheme": "PM Internship",
       "category": "Employment",
       "apply_link": "https://pminternship.mca.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-internship-scheme"
+      "source": "https://www.myscheme.gov.in/schemes/pm-internship-scheme",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -797,7 +1013,9 @@
       "scheme": "NATS",
       "category": "Education & Employment",
       "apply_link": "https://mhrdnats.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/nats"
+      "source": "https://www.myscheme.gov.in/schemes/nats",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -806,7 +1024,9 @@
       "scheme": "PM Kisan Sampada",
       "category": "Agriculture",
       "apply_link": "https://mofpi.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pradhan-mantri-kisan-sampada-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/pradhan-mantri-kisan-sampada-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -815,7 +1035,9 @@
       "scheme": "NPS",
       "category": "Pension",
       "apply_link": "https://enps.nsdl.com/",
-      "source": "https://www.myscheme.gov.in/schemes/nps"
+      "source": "https://www.myscheme.gov.in/schemes/nps",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -824,7 +1046,9 @@
       "scheme": "PM-AASHA",
       "category": "Agriculture",
       "apply_link": "https://agricoop.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/pm-aasha"
+      "source": "https://www.myscheme.gov.in/schemes/pm-aasha",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -833,7 +1057,9 @@
       "scheme": "e-NAM",
       "category": "Agriculture",
       "apply_link": "https://enam.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/enam"
+      "source": "https://www.myscheme.gov.in/schemes/enam",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -842,7 +1068,9 @@
       "scheme": "National Ayush Mission",
       "category": "Health",
       "apply_link": "https://ayush.gov.in/",
-      "source": "https://www.myscheme.gov.in/schemes/national-ayush-mission"
+      "source": "https://www.myscheme.gov.in/schemes/national-ayush-mission",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -851,7 +1079,9 @@
       "scheme": "Nikshay Poshan",
       "category": "Health",
       "apply_link": "https://nikshay.in/",
-      "source": "https://www.myscheme.gov.in/schemes/nikshay-poshan-yojana"
+      "source": "https://www.myscheme.gov.in/schemes/nikshay-poshan-yojana",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   },
   {
@@ -860,7 +1090,9 @@
       "scheme": "POSHAN Abhiyan",
       "category": "Health & Nutrition",
       "apply_link": "https://icds-wcd.nic.in/",
-      "source": "https://www.myscheme.gov.in/schemes/poshan-abhiyaan"
+      "source": "https://www.myscheme.gov.in/schemes/poshan-abhiyaan",
+      "last_verified_at": "2026-04-01",
+      "state_availability": "all"
     }
   }
 ]

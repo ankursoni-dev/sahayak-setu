@@ -1,5 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import type { SchemeSource } from '@/types/scheme';
+import { safeHref } from '@/lib/url';
+import { SchemeBadges } from './SchemeBadges';
 
 interface SourceLinksBlockProps {
   sources: readonly SchemeSource[];
@@ -23,6 +25,8 @@ export function SourceLinksBlock({ sources, heading }: SourceLinksBlockProps) {
       <ul className="flex flex-col gap-3">
         {rows.map((s, i) => {
           const isApply = s.cta_label === 'Apply Now';
+          const applyHref = safeHref(s.apply_link);
+          const sourceHref = safeHref(s.source);
           return (
             <li
               key={`${s.scheme}-${i}`}
@@ -35,11 +39,12 @@ export function SourceLinksBlock({ sources, heading }: SourceLinksBlockProps) {
                     {confidenceEmoji(s.confidence_label)} {s.confidence_label}
                   </span>
                 )}
+                <SchemeBadges source={s} />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {s.apply_link && (
+                {applyHref && (
                   <a
-                    href={s.apply_link}
+                    href={applyHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-cta)] px-3 py-1.5 text-xs font-medium text-[var(--color-cta-ink)]"
@@ -49,9 +54,9 @@ export function SourceLinksBlock({ sources, heading }: SourceLinksBlockProps) {
                     <ExternalLink size={12} strokeWidth={2} />
                   </a>
                 )}
-                {s.source && (
+                {sourceHref && (
                   <a
-                    href={s.source}
+                    href={sourceHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink)]"

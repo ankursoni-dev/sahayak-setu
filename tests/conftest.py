@@ -56,10 +56,8 @@ class _FakeRedis:
 @pytest.fixture(autouse=True)
 def _stub_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace the module-level Redis client so no test touches the network."""
-    from backend.services import cache_service, session_service
+    from backend.services import session_service
 
     fake = _FakeRedis()
-    monkeypatch.setattr(session_service, "_client", lambda: fake)
-    # cache_service uses session_service._client internally; this chain covers both.
-    if hasattr(cache_service, "_client"):
-        monkeypatch.setattr(cache_service, "_client", lambda: fake, raising=False)
+    if hasattr(session_service, "_client"):
+        monkeypatch.setattr(session_service, "_client", lambda: fake, raising=False)

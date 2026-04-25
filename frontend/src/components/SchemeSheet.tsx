@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import type { CuratedScheme } from '@/data/curatedSchemes';
+import { safeHref } from '@/lib/url';
 
 interface SchemeSheetProps {
   scheme: CuratedScheme | null;
@@ -8,28 +9,76 @@ interface SchemeSheetProps {
   onAskAboutThis: (scheme: CuratedScheme) => void;
 }
 
+const FOCUSABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
 export function SchemeSheet({ scheme, onClose, onAskAboutThis }: SchemeSheetProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  // Element that opened the sheet — restore focus there on close so keyboard users
+  // don't get dropped at <body> after dismissing.
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!scheme) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Trap Tab inside the dialog.
+      if (e.key === 'Tab' && dialogRef.current) {
+        const nodes = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE);
+        if (!nodes.length) return;
+        const first = nodes[0]!;
+        const last = nodes[nodes.length - 1]!;
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+
+    // Move focus into the dialog so screen readers announce it and Tab navigation
+    // starts inside. Defer one frame so the close button is mounted.
+    const focusTimer = window.setTimeout(() => {
+      closeBtnRef.current?.focus();
+    }, 0);
+
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      window.clearTimeout(focusTimer);
+      previousFocusRef.current?.focus?.();
     };
   }, [scheme, onClose]);
 
   if (!scheme) return null;
+
+  const applyHref = safeHref(scheme.applyLink);
+  const sourceHref = safeHref(scheme.sourceLink);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="scheme-sheet-title"
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       <div
@@ -39,6 +88,7 @@ export function SchemeSheet({ scheme, onClose, onAskAboutThis }: SchemeSheetProp
       />
       <div className="relative z-10 w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 shadow-lg">
         <button
+          ref={closeBtnRef}
           type="button"
           onClick={onClose}
           aria-label="Close"
@@ -64,22 +114,26 @@ export function SchemeSheet({ scheme, onClose, onAskAboutThis }: SchemeSheetProp
           </div>
         </dl>
         <div className="mb-4 flex flex-wrap gap-2">
-          <a
-            href={scheme.applyLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-cta)] px-4 py-2 text-sm font-medium text-[var(--color-cta-ink)]"
-          >
-            Apply now <ExternalLink size={12} strokeWidth={2.5} />
-          </a>
-          <a
-            href={scheme.sourceLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-4 py-2 text-sm font-medium"
-          >
-            Official info <ExternalLink size={12} strokeWidth={2.5} />
-          </a>
+          {applyHref && (
+            <a
+              href={applyHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-cta)] px-4 py-2 text-sm font-medium text-[var(--color-cta-ink)]"
+            >
+              Apply now <ExternalLink size={12} strokeWidth={2.5} />
+            </a>
+          )}
+          {sourceHref && (
+            <a
+              href={sourceHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-4 py-2 text-sm font-medium"
+            >
+              Official info <ExternalLink size={12} strokeWidth={2.5} />
+            </a>
+          )}
         </div>
         <button
           type="button"

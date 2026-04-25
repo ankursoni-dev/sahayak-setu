@@ -15,6 +15,17 @@ class SchemeSource(BaseModel):
     confidence_label: str
     cta_label: str
     preview_text: str = ""
+    # ISO date (YYYY-MM-DD) the scheme was last verified against the official source.
+    # Frontend renders this as a "Verified: <date>" pill so users can judge freshness.
+    last_verified_at: str | None = None
+    # "all" for nationwide schemes, list[str] of state names for state-specific.
+    state_availability: str | list[str] | None = None
+    # Computed against the user's profile.state when present:
+    # "available" | "unknown_state" | "not_available" | None (when no state given).
+    state_match: str | None = None
+    # Up to 4 query tokens that overlapped the chunk — drives the "Why this match"
+    # explainer. Plain words only; no scores leak.
+    matched_terms: list[str] = Field(default_factory=list)
 
 
 class SearchResponse(BaseModel):

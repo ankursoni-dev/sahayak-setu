@@ -33,10 +33,7 @@ _ERROR_RESPONSES: dict[int | str, dict] = {
 )
 @limiter.limit("10/minute;100/hour")
 async def handle_search(request: Request, search_request: SearchRequest) -> SearchResponse:
-    try:
-        return await execute_search(search_request)
-    except HTTPException:
-        raise
+    return await execute_search(search_request)
 
 
 def _ndjson_line(obj: dict) -> bytes:

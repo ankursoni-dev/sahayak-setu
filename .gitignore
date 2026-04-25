@@ -31,6 +31,10 @@ qdrant_storage/
 .DS_Store
 Thumbs.db
 
+# Claude Code per-machine settings (project policy in committed settings.json,
+# personal allow-list / preferences in settings.local.json — local only).
+.claude/settings.local.json
+
 # Build & Scripts
 dist/
 build/
@@ -40,3 +44,5 @@ node_modules/
 playwright-report/
 test-results/
 .playwright/
+data/
+prompts/

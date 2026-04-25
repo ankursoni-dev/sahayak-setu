@@ -1,5 +1,7 @@
 import type { SchemeSource } from '@/types/scheme';
 import { primarySourceIndex } from '@/lib/citations';
+import { safeHref } from '@/lib/url';
+import { SchemeBadges } from './SchemeBadges';
 
 interface CitationFootnotesProps {
   sources: readonly SchemeSource[];
@@ -18,6 +20,7 @@ export function CitationFootnotes({ sources }: CitationFootnotesProps) {
         {sources.map((s, idx) => {
           const num = idx + 1;
           const isPrimary = idx === primaryIdx;
+          const sourceHref = safeHref(s.source);
           return (
             <li
               key={num}
@@ -33,9 +36,9 @@ export function CitationFootnotes({ sources }: CitationFootnotesProps) {
                   <span className="font-semibold text-[var(--color-ink)]">
                     [{num}] {s.scheme} — Official source
                   </span>
-                  {s.source && (
+                  {sourceHref && (
                     <a
-                      href={s.source}
+                      href={sourceHref}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-[var(--color-saffron)] hover:underline"
@@ -43,26 +46,30 @@ export function CitationFootnotes({ sources }: CitationFootnotesProps) {
                       MyScheme.gov.in / catalogue ↗
                     </a>
                   )}
+                  <SchemeBadges source={s} />
                 </div>
               ) : (
-                <span>
-                  <span className="font-medium text-[var(--color-ink)]">
-                    [{num}] {s.scheme}
-                  </span>{' '}
-                  —{' '}
-                  {s.source ? (
-                    <a
-                      href={s.source}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-[var(--color-saffron)] hover:underline"
-                    >
-                      MyScheme / catalogue
-                    </a>
-                  ) : (
-                    'Retrieved context'
-                  )}
-                </span>
+                <div className="flex flex-col">
+                  <span>
+                    <span className="font-medium text-[var(--color-ink)]">
+                      [{num}] {s.scheme}
+                    </span>{' '}
+                    —{' '}
+                    {sourceHref ? (
+                      <a
+                        href={sourceHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-[var(--color-saffron)] hover:underline"
+                      >
+                        MyScheme / catalogue
+                      </a>
+                    ) : (
+                      'Retrieved context'
+                    )}
+                  </span>
+                  <SchemeBadges source={s} />
+                </div>
               )}
             </li>
           );

@@ -15,8 +15,9 @@ from backend.config import (
 )
 from backend.rate_limit import limiter
 from backend.services import injection_guard, moderation_service, pii_scrubber, retrieval_service
-from backend.services import vapi_webhook_guard
+from backend.services import vapi_webhook_guard, voice_session_service
 from backend.services.language_hint import infer_bcp47
+from backend.services.vapi_webhook_guard import extract_webhook_delivery_id
 
 router = APIRouter(tags=["voice"])
 
@@ -91,6 +92,8 @@ async def handle_vapi_webhook(request: Request):
         tool_calls = message.get("toolCalls", [])
         if not isinstance(tool_calls, list):
             tool_calls = []
+        # Vapi call id — used to scope the F5 follow-up cache.
+        vapi_call_id = extract_webhook_delivery_id(webhook_body) or ""
         results = []
         for call in tool_calls:
             if not isinstance(call, dict):
@@ -99,7 +102,15 @@ async def handle_vapi_webhook(request: Request):
             fn = call.get("function")
             if not isinstance(fn, dict):
                 continue
-            if fn.get("name") != "search_schemes":
+            tool_name = fn.get("name")
+            if tool_name not in ("search_schemes", "get_section"):
+                # Unknown tool — log so we can debug Vapi config drift, return empty.
+                results.append(
+                    {
+                        "toolCallId": call_id,
+                        "result": "I don't recognise that follow-up. Please ask the scheme question again.",
+                    }
+                )
                 continue
             raw_args = fn.get("arguments", "{}")
             if isinstance(raw_args, dict):
@@ -117,6 +128,25 @@ async def handle_vapi_webhook(request: Request):
                     continue
             if not isinstance(args, dict):
                 args = {}
+
+            if tool_name == "get_section":
+                # Follow-up: return one section (documents/eligibility/apply) of the
+                # most recent search_schemes result for this Vapi call.
+                section = str(args.get("section", "")).strip().lower()
+                if not section:
+                    results.append({"toolCallId": call_id, "result": "Which section — documents, eligibility, or how to apply?"})
+                    continue
+                section_text = await voice_session_service.get_section(vapi_call_id, section) if vapi_call_id else None
+                results.append(
+                    {
+                        "toolCallId": call_id,
+                        "result": section_text or (
+                            "I don't have that section yet — ask me about a scheme first."
+                        ),
+                    }
+                )
+                continue
+
             query_text = args.get("query", "")
             query_text, suspicious = injection_guard.sanitize_query(query_text)
             query_text, _ = pii_scrubber.scrub(query_text)
@@ -143,6 +173,15 @@ async def handle_vapi_webhook(request: Request):
             relevant_results, _near_miss_results, context, near_ctx = (
                 retrieval_service.retrieve_for_rag(query_text, SIMILARITY_THRESHOLD)
             )
+            # Cache the top retrieved chunk for follow-up "tell me the documents" / etc.
+            if vapi_call_id and relevant_results:
+                top = relevant_results[0]
+                await voice_session_service.set_voice_context(
+                    vapi_call_id,
+                    scheme=top.scheme_name,
+                    document=top.document,
+                    apply_link=top.apply_link,
+                )
             context_parts = [context] if context.strip() else []
             if near_ctx.strip():
                 context_parts.append(near_ctx)

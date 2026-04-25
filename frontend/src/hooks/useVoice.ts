@@ -62,6 +62,11 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
   const vapiBrokenRef = useRef(false);
   const vapiCallStartAtRef = useRef(0);
   const vapiGotTranscriptRef = useRef(false);
+  /** Set by stop() so the call-end handler can tell user-initiated termination
+   * apart from a Vapi-side failure. Without this, a user clicking Stop within
+   * 3 seconds (before saying anything) trips the broken-flag heuristic and
+   * permanently downgrades the session to browser STT. */
+  const userInitiatedStopRef = useRef(false);
   /** Accumulate all final transcripts within a single Vapi call so the user can
    * pause mid-sentence. We submit once on call-end (Stop button or natural end). */
   const vapiAccumulatedRef = useRef('');
@@ -69,6 +74,16 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
   const selectedLanguage = useAppStore((s) => s.selectedLanguage);
   const setVoice = useAppStore((s) => s.setVoice);
   const setStatus = useAppStore((s) => s.setStatus);
+
+  /** Stash onTranscript in a ref so the long-lived Vapi listeners (registered once
+   * on mount) always read the latest callback. Without this, an inline arrow on the
+   * caller (e.g. <HomePage onTranscript={(t) => ...} />) creates a new function
+   * every render and the init useEffect would either re-run constantly (causing
+   * duplicate listeners) or close over a stale callback from the very first render. */
+  const onTranscriptRef = useRef(onTranscript);
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
 
   const SpeechRecognitionImpl = resolveSpeechRecognition();
   const isSupported = Boolean(SpeechRecognitionImpl) || Boolean(env.VAPI_PUBLIC_KEY);
@@ -108,11 +123,21 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
         meterRafRef.current = requestAnimationFrame(tick);
       };
       tick();
-    } catch {
-      // Mic permission denied — meter stays dark, that's fine.
+    } catch (err) {
+      // Mic permission denied or device unavailable. Tell the user instead of
+      // silently freezing — they otherwise see Talk do nothing on click.
       teardownMeter();
+      const denied =
+        err instanceof DOMException &&
+        (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+      setStatus(
+        denied
+          ? 'Microphone blocked — check browser permissions'
+          : 'Microphone unavailable',
+        'yellow',
+      );
     }
-  }, [teardownMeter]);
+  }, [setStatus, teardownMeter]);
 
   /** Skip Vapi entirely under test automation (navigator.webdriver === true) —
    * headless Chromium can't grant mic permission, so Vapi hangs in 'listening'. */
@@ -127,6 +152,7 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
         vapiCallStartAtRef.current = Date.now();
         vapiGotTranscriptRef.current = false;
         vapiAccumulatedRef.current = '';
+        userInitiatedStopRef.current = false;
         setState('listening');
         setTransport('vapi');
         setVoice({ voiceState: 'listening', voiceTransport: 'vapi', voiceLiveCaption: '' });
@@ -138,7 +164,13 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
           ? Date.now() - vapiCallStartAtRef.current
           : 0;
         const accumulated = vapiAccumulatedRef.current.trim();
-        const shortAndSilent = duration > 0 && duration < 3000 && !vapiGotTranscriptRef.current;
+        const userStopped = userInitiatedStopRef.current;
+        userInitiatedStopRef.current = false;
+        // Only treat short+silent calls as broken when the *server* hung up. If the
+        // user clicked Stop before saying anything, that's user intent, not a Vapi
+        // failure — don't downgrade the rest of the session to browser STT.
+        const shortAndSilent =
+          !userStopped && duration > 0 && duration < 3000 && !vapiGotTranscriptRef.current;
         setState('idle');
         setTransport('none');
         setVoice({ voiceState: 'idle', voiceTransport: 'none', voiceLiveCaption: '' });
@@ -154,11 +186,15 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
           return;
         }
         if (accumulated) {
-          onTranscript(accumulated);
+          onTranscriptRef.current(accumulated);
           vapiAccumulatedRef.current = '';
         } else {
           setStatus('Ready', 'green');
         }
+      });
+      // Vapi error events are a stronger broken-signal than duration heuristics.
+      instance.on('error', () => {
+        vapiBrokenRef.current = true;
       });
       instance.on('message', (msg: unknown) => {
         if (!msg || typeof msg !== 'object') return;
@@ -177,7 +213,10 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
     } catch {
       // SDK init failed — stay in browser-fallback mode.
     }
-  }, [isAutomated, onTranscript, setStatus, setVoice, startMeter, teardownMeter]);
+    // onTranscript is intentionally NOT in the dep array — we read it through
+    // onTranscriptRef so this effect runs once per mount, not per render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAutomated, setStatus, setVoice, startMeter, teardownMeter]);
 
   useEffect(() => () => teardownMeter(), [teardownMeter]);
 
@@ -202,7 +241,7 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
         const t = first[0].transcript;
         if (t) {
           gotTranscript = true;
-          onTranscript(t);
+          onTranscriptRef.current(t);
         }
       };
       const finish = () => {
@@ -234,7 +273,7 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
       };
       const commit = () => {
         const q = finalBuf.trim() || live.trim();
-        if (q) onTranscript(q);
+        if (q) onTranscriptRef.current(q);
         recognitionRef.current = null;
         setState('idle');
         setTransport('none');
@@ -259,7 +298,10 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
     setStatus('Listening...', 'green');
     void startMeter();
     return true;
-  }, [SpeechRecognitionImpl, isAutomated, onTranscript, selectedLanguage, setStatus, setVoice, startMeter, teardownMeter]);
+    // onTranscript flows through onTranscriptRef; keep it out of deps so callers
+    // passing inline arrows don't churn this callback identity every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SpeechRecognitionImpl, isAutomated, selectedLanguage, setStatus, setVoice, startMeter, teardownMeter]);
 
   useEffect(() => {
     startBrowserRef.current = startBrowser;
@@ -302,6 +344,9 @@ export function useVoice({ onTranscript }: UseVoiceOptions): UseVoiceReturn {
 
   const stop = useCallback((): void => {
     if (transport === 'vapi' && vapiRef.current) {
+      // Mark this as a user-initiated stop so the call-end handler doesn't trip
+      // the broken-flag heuristic when the user pressed Stop before speaking.
+      userInitiatedStopRef.current = true;
       try {
         vapiRef.current.stop();
       } catch {

@@ -5,14 +5,15 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-import os
 import uuid
 from datetime import datetime, timezone
 
-from backend.config import HISTORY_WINDOW
+from backend.config import HISTORY_WINDOW, SESSION_SECRET as _SESSION_SECRET_STR
 from backend.services.mongo_service import db
 
-SESSION_SECRET = os.getenv("SESSION_SECRET", "").encode("utf-8")
+# HMAC requires bytes; config exposes the value as a stripped string so a single source
+# of truth governs both startup enforcement (in production) and signing here.
+SESSION_SECRET = _SESSION_SECRET_STR.encode("utf-8") if _SESSION_SECRET_STR else b""
 
 logger = logging.getLogger(__name__)
 

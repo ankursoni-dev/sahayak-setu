@@ -129,11 +129,14 @@ curl http://localhost:8000/health
 ```
 
 #### 4. Ingest the knowledge base into Qdrant
-Run this once (and re-run whenever you update `scripts/data/schemes.json`):
+Run this once (and re-run whenever you update `scripts/data/schemes.json`). The default
+mode is **upsert** (idempotent — safe to re-run; chunks keep stable hash-derived IDs):
 ```bash
 QDRANT_URL=http://localhost:6333 QDRANT_API_KEY= python scripts/ingest.py
 ```
-You should see: `[SUCCESS] ... Repository Ready!`
+For a clean rebuild (drops the collection first), pass `--recreate`. Against a non-local
+Qdrant the script will prompt for confirmation; pass `--yes` in CI to skip the prompt.
+You should see: `[SUCCESS] Repository ready!`
 
 #### 5. Open the frontend
 Open `frontend/index.html` directly in your browser, or use a live server (e.g. VS Code Live Server extension on port 5500). Make sure `FRONTEND_ORIGIN` in `.env` matches whatever address you use.

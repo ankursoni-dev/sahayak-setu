@@ -6,7 +6,9 @@ function resolveBackendUrl(): string {
   if (typeof window === 'undefined') return 'http://localhost:8000';
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000';
-  return 'https://sahayaksetu-backend-3kxl.onrender.com';
+  // Last-resort prod fallback. Always prefer setting VITE_BACKEND_URL in Vercel —
+  // hardcoding here was the cause of the "FE still hitting old Render URL" bug.
+  return 'https://sahayak-setu-production.up.railway.app';
 }
 
 function flagEnabled(v: unknown, defaultValue: boolean): boolean {

@@ -80,6 +80,82 @@ def _sanitize_profile(profile: dict) -> dict:
     return clean
 
 
+def _scheme_listing_fallback(
+    relevant_results: list,
+    query: str,
+    language: str,
+) -> str:
+    """Synthesise a helpful answer when the LLM/grounding pipeline rejected its
+    own draft but retrieval *did* return relevant schemes.
+
+    The previous behaviour was to surface ``fallback_text_for_language`` ("I don't
+    have verified information"). That's accurate-but-useless when the UI is
+    simultaneously showing 4 ranked sources, an eligibility hint, and a complete
+    action plan — users read "no info" as "this product is broken."
+
+    Instead, lead with an honest "I don't have a precise answer for that exact
+    question, but here are the closest matching schemes" framing, then list 3-4
+    scheme names with their one-line summary. Localised across the same languages
+    as the original fallback so the chat bubble's voice doesn't suddenly switch
+    to English mid-conversation.
+    """
+    if not relevant_results:
+        return ""
+
+    top = relevant_results[:4]
+    lang = (language or "").lower().split("-")[0]
+
+    intros: dict[str, str] = {
+        "hi": "मेरे पास इस सटीक सवाल के लिए सत्यापित जवाब नहीं है, लेकिन आपकी स्थिति से सबसे मेल खाने वाली योजनाएँ ये हैं:",
+        "mr": "तुमच्या नेमक्या प्रश्नासाठी माझ्याकडे सत्यापित उत्तर नाही, पण तुमच्या परिस्थितीशी सर्वात जुळणाऱ्या योजना खालील आहेत:",
+        "gu": "તમારા ચોક્કસ પ્રશ્ન માટે મારી પાસે ચકાસાયેલ જવાબ નથી, પણ તમારી પરિસ્થિતિ સાથે સૌથી મેળ ખાતી યોજનાઓ આ છે:",
+        "kn": "ನಿಮ್ಮ ನಿಖರವಾದ ಪ್ರಶ್ನೆಗೆ ನನ್ನ ಬಳಿ ದೃಢೀಕೃತ ಉತ್ತರವಿಲ್ಲ, ಆದರೆ ನಿಮ್ಮ ಪರಿಸ್ಥಿತಿಗೆ ಹೆಚ್ಚು ಹೊಂದುವ ಯೋಜನೆಗಳು ಇಲ್ಲಿವೆ:",
+        "ta": "உங்கள் சரியான கேள்விக்கு எனக்கு சரிபார்க்கப்பட்ட பதில் இல்லை, ஆனால் உங்கள் சூழலுக்கு பொருந்தக்கூடிய திட்டங்கள் இவை:",
+        "te": "మీ ఖచ్చితమైన ప్రశ్నకు నా వద్ద ధృవీకరించబడిన సమాధానం లేదు, కానీ మీ పరిస్థితికి సరిపోయే పథకాలు ఇవి:",
+        "ml": "നിങ്ങളുടെ കൃത്യമായ ചോദ്യത്തിന് എന്റെ പക്കൽ സ്ഥിരീകരിച്ച ഉത്തരമില്ല, പക്ഷേ നിങ്ങളുടെ സാഹചര്യത്തിന് ഏറ്റവും യോജിച്ച പദ്ധതികൾ ഇതാ:",
+        "bn": "আপনার সঠিক প্রশ্নের জন্য আমার কাছে যাচাইকৃত উত্তর নেই, তবে আপনার পরিস্থিতির সাথে সবচেয়ে মেলে এমন স্কিমগুলি হল:",
+    }
+    outros: dict[str, str] = {
+        "hi": "विवरण के लिए आधिकारिक पोर्टल देखें या नीचे दिए गए स्रोतों पर क्लिक करें।",
+        "mr": "तपशीलासाठी अधिकृत पोर्टल पहा किंवा खालील स्रोतांवर क्लिक करा.",
+        "gu": "વિગતો માટે અધિકૃત પોર્ટલ જુઓ અથવા નીચેના સ્રોતો પર ક્લિક કરો.",
+        "kn": "ವಿವರಗಳಿಗಾಗಿ ಅಧಿಕೃತ ಪೋರ್ಟಲ್ ನೋಡಿ ಅಥವಾ ಕೆಳಗಿನ ಮೂಲಗಳ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ.",
+        "ta": "விவரங்களுக்கு அதிகாரப்பூர்வ போர்ட்டலைப் பார்க்கவும் அல்லது கீழே உள்ள மூலங்களைக் கிளிக் செய்யவும்.",
+        "te": "వివరాల కోసం అధికారిక పోర్టల్‌ను చూడండి లేదా క్రింది మూలాలపై క్లిక్ చేయండి.",
+        "ml": "വിശദാംശങ്ങൾക്കായി ഔദ്യോഗിക പോർട്ടൽ കാണുക അല്ലെങ്കിൽ താഴെയുള്ള ഉറവിടങ്ങളിൽ ക്ലിക്ക് ചെയ്യുക.",
+        "bn": "বিস্তারিত জানতে অফিসিয়াল পোর্টাল দেখুন বা নিচের সূত্রগুলিতে ক্লিক করুন।",
+    }
+    intro = intros.get(lang) or (
+        "I don't have a verified direct answer to that exact question, but here are the schemes that most closely match your situation:"
+    )
+    outro = outros.get(lang) or (
+        "Check the official portal for full details or click any source below."
+    )
+
+    bullets: list[str] = []
+    for idx, r in enumerate(top, start=1):
+        scheme = (r.scheme_name or "").strip() or f"Scheme {idx}"
+        # Pull a one-line summary out of the document text — first non-empty line that
+        # isn't the bare scheme name. Keep it short so the bubble stays readable.
+        doc = (r.document or "").strip()
+        first_line = ""
+        for line in doc.splitlines():
+            line = line.strip(" -•").strip()
+            if not line:
+                continue
+            if line.lower().startswith(scheme.lower()):
+                continue
+            first_line = line
+            break
+        if not first_line and doc:
+            first_line = doc[:140]
+        if first_line and len(first_line) > 180:
+            first_line = first_line[:177].rstrip() + "…"
+        bullets.append(f"[{idx}] **{scheme}** — {first_line}" if first_line else f"[{idx}] **{scheme}**")
+
+    return "\n".join([intro, "", *bullets, "", outro])
+
+
 def _user_state_from_profile(profile: dict) -> str | None:
     state = profile.get("state") if isinstance(profile, dict) else None
     if not isinstance(state, str):
@@ -428,6 +504,24 @@ async def execute_search(
         max_n = len(relevant_results)
         answer_main = llm_service.validate_citations_in_answer(answer_main, max_n)
         answer_main = llm_service.dedupe_citations(answer_main)
+
+        # Grounding-failure recovery: if the LLM answer collapsed back to the bare
+        # "I don't have verified information" template AND retrieval returned real
+        # schemes, swap in a list-style summary. The previous behaviour rendered a
+        # dead-end message above a fully-populated sources panel + action plan,
+        # which read as "broken product" to users.
+        normalised_answer = (answer_main or "").strip()
+        if normalised_answer == fallback.strip() and relevant_results:
+            replacement = _scheme_listing_fallback(
+                relevant_results, original_query, search_request.language
+            )
+            if replacement:
+                answer_main = replacement
+                logger.info(
+                    "answer_fallback_swapped_to_listing",
+                    extra={"sources": len(relevant_results), "lang": search_request.language},
+                )
+
         if reasoning_why:
             reasoning_why = llm_service.dedupe_citations(
                 llm_service.validate_citations_in_answer(reasoning_why, max_n)

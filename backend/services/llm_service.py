@@ -41,7 +41,7 @@ STRUCTURED_SUFFIX = f"""
 OUTPUT STRUCTURE (keep these marker lines EXACTLY in English; all other content in Target Language):
 
 {MARK_ANSWER}
-[Main answer. When naming a scheme from the Citation index, put its number in brackets right after the name (e.g. PM-Kisan [1]). End with a 👉 Next step line. No invented URLs.]
+[Main answer. Name schemes plainly — no citation numbers like [1] or [S1]. End with a next step line. No invented URLs.]
 
 {MARK_WHY}
 - [Bullet: only if explicitly supported by Database Context; else one line: use the exact honesty phrase from system rules]
@@ -99,9 +99,10 @@ def build_messages(
             '"why_it_fits":["string"],'
             '"near_miss":"string|null"'
             "}\n"
-            "CRITICAL: The `answer` field is the user-facing reply and MUST ALWAYS be a non-empty string in TARGET_LANGUAGE. "
-            "`claims` is the supporting evidence (each claim is one fact + source_id) — it is SEPARATE from `answer` and does not replace it. "
-            "When status=ok, `answer` must summarize the relevant scheme(s) in 1–3 sentences and `claims` must list ≥1 fact grounded in SOURCES. "
+            "CRITICAL: The `answer` field is the user-facing reply — plain prose, no [S1]/[1] citation markers, no markdown. "
+            "MUST be a non-empty string in TARGET_LANGUAGE. "
+            "`claims` is the supporting evidence (each claim is one fact + source_id) — SEPARATE from `answer`. "
+            "When status=ok, `answer` must summarize the relevant scheme(s) in 1–3 sentences; `claims` must list ≥1 fact grounded in SOURCES. "
             "When status=insufficient_context, `claims=[]` and `answer` is a short apology in TARGET_LANGUAGE suggesting the official portal or CSC."
         )
     else:
@@ -546,41 +547,40 @@ async def generate_json_prompt(prompt: str) -> tuple[dict, str]:
 
 
 async def rewrite_query(query: str, language: str, *, context: str = "") -> str:
-    """Query rewrite for retrieval recall. Fail-open to original query.
+    """Translate query to English and resolve pronoun references for retrieval.
 
-    When ``context`` (last assistant reply) is provided, the LLM resolves pronoun
-    references — "इस स्कीम", "स्कीम के तहत", "this scheme" etc. — to the actual
-    scheme name before the query reaches vector search.
+    The vector database (Qdrant) is indexed in English using an English embedding
+    model. Translating the query to English before retrieval ensures every scheme
+    in the 4,600-scheme catalog is reachable regardless of input language.
+
+    Output is ALWAYS English — the original query language is preserved separately
+    for the LLM generation prompt so the user's answer is still in their language.
+    Fails open (returns original query) so retrieval is never blocked.
     """
     context_section = (
-        f"\nCONVERSATION CONTEXT (last assistant reply — use this to resolve scheme references):\n"
-        f"{context}\n"
-        if context.strip()
-        else ""
-    )
-    pronoun_rule = (
-        "STEP 1 — REFERENCE RESOLUTION (do this first when context is provided):\n"
-        "If the query contains ANY of these without a specific scheme name — 'इस', 'उस', 'यह', 'वह', "
-        "'इस स्कीम', 'इस योजना', 'स्कीम', 'योजना', 'इसमें', 'इसके', 'this scheme', 'it', 'the scheme' — "
-        "replace the reference with the ACTUAL scheme name found in the conversation context.\n"
-        "Example: query='इस स्कीम के तहत साल में कितने दिन काम मिलता है', context mentions 'मनरेगा' "
-        "→ output: 'मनरेगा के तहत साल में कितने दिन काम मिलता है'\n"
-        "Example: query='स्कीम के तहत साल में कितने दिन काम मिलता है', context mentions 'MGNREGA' "
-        "→ output: 'मनरेगा के तहत साल में कितने दिन काम मिलता है'\n\n"
+        f"\nConversation context (last assistant reply — use for pronoun resolution):\n{context}\n"
         if context.strip()
         else ""
     )
     prompt = (
-        "You are a search query rewriter for Indian government welfare schemes.\n\n"
-        f"{pronoun_rule}"
-        "STEP 2 — OTHER RULES:\n"
-        "- If the query IS already a specific scheme name (PM Kisan, MGNREGA, Ayushman, "
-        "Ujjwala, Mudra, SVANidhi, PMAY, Jan Dhan, Vishwakarma, etc.), return it UNCHANGED.\n"
-        "- Otherwise expand with eligibility context, benefits, documents, or state.\n"
-        "- Max 20 words. Return ONLY the rewritten query — no quotes, no bullets, no explanation.\n"
+        "You are a retrieval query translator for Indian government welfare schemes.\n\n"
+        "Task: Produce an English search query from the user's input for semantic search "
+        "against an English database of 4,600 government schemes.\n\n"
+        "Rules:\n"
+        "1. OUTPUT must be English only, regardless of input language.\n"
+        "2. TRANSLATE: Hindi/Marathi/Tamil/etc → English. "
+        "Scheme names: transliterate to standard English (मुद्रा→MUDRA, मनरेगा→MGNREGA, "
+        "आयुष्मान→Ayushman Bharat, उज्ज्वला→Ujjwala, पीएम किसान→PM Kisan).\n"
+        "3. PRONOUNS: If context is provided and the query has vague references "
+        "('this scheme', 'इस योजना', 'it', 'इसमें', 'यह') — replace with the actual "
+        "scheme name from context before translating.\n"
+        "4. EXPAND: Add useful retrieval terms — eligibility, benefits, state, age, income, "
+        "occupation — if the query is short or vague.\n"
+        "5. PRESERVE: Keep specific values — state names, ages, income amounts.\n"
+        "6. BREVITY: Max 25 words.\n"
+        "Return ONLY the English query. No explanation, no quotes, no bullets.\n"
         f"{context_section}"
-        f"\nTarget language: {language}\n"
-        f"User query: {query}"
+        f"\nUser query: {query}"
     )
     try:
         resp = await with_timeout(

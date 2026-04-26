@@ -104,8 +104,20 @@ def _derive_apply_link(mongo_doc: dict) -> str | None:
 
 
 def _derive_source_link(mongo_doc: dict) -> str:
-    """The MyScheme catalogue page is always the canonical "official info" link."""
-    return f"https://www.myscheme.gov.in/schemes/{mongo_doc.get('slug', '')}"
+    """Return a MyScheme URL for this scheme.
+
+    Prefer the /schemes/{slug} deep link when the slug is non-empty (it was set
+    during ingestion and usually resolves). When slug is missing, fall back to
+    the search page which always returns something useful rather than a 404.
+    """
+    slug = (mongo_doc.get("slug") or "").strip()
+    if slug:
+        return f"https://www.myscheme.gov.in/schemes/{slug}"
+    name = (mongo_doc.get("name") or mongo_doc.get("short_title") or "").strip()
+    if name:
+        import urllib.parse
+        return f"https://www.myscheme.gov.in/search?q={urllib.parse.quote(name)}"
+    return "https://www.myscheme.gov.in"
 
 
 def _state_availability_from_doc(mongo_doc: dict) -> str | list[str] | None:
@@ -419,21 +431,14 @@ def _scheme_match_key(name: str) -> str:
 
 
 _CATALOG_BOOST_RULES: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"(?:\b(?:mgnrega|mnrega|nrega)\b|मनरेगा)", re.I), "mgnrega"),
-    (
-        re.compile(
-            r"\bpm[-\s]?kisan\b|pmkisan|pm[-\s]?kisan\s+samman|"
-            r"पीएम\s*किसान|किसान\s*सम्मान|किसान\s*निधि|प्रधानमंत्री\s*किसान",
-            re.I,
-        ),
-        "pmkisan",
-    ),
-    (re.compile(r"\bayushman\b|pmjay|pm[-\s]?jay|आयुष्मान", re.I), "ayushman bharat"),
-    (re.compile(r"\bujjwala\b|lpg\s+yojana|उज्ज्वला", re.I), "ujjwala yojana"),
+    (re.compile(r"\b(?:mgnrega|mnrega|nrega)\b", re.I), "mgnrega"),
+    (re.compile(r"\bpm[-\s]?kisan\b|pmkisan|pm[-\s]?kisan\s+samman", re.I), "pmkisan"),
+    (re.compile(r"\bayushman\b|pmjay|pm[-\s]?jay", re.I), "ayushman bharat"),
+    (re.compile(r"\bujjwala\b|lpg\s+yojana", re.I), "ujjwala yojana"),
     (re.compile(r"\bmudra\b|pmmy|pm\s*mudra", re.I), "pm mudra yojana"),
     (re.compile(r"\bsvanidhi\b|svAnidhi|street\s*vendor\s*loan", re.I), "pm svanidhi"),
-    (re.compile(r"\bvishwakarma\b|pm\s*vishwakarma|विश्वकर्मा", re.I), "pm vishwakarma"),
-    (re.compile(r"\bjan\s*dhan\b|pmjdy|जन\s*धन", re.I), "pm jan dhan yojana"),
+    (re.compile(r"\bvishwakarma\b|pm\s*vishwakarma", re.I), "pm vishwakarma"),
+    (re.compile(r"\bjan\s*dhan\b|pmjdy", re.I), "pm jan dhan yojana"),
 )
 
 

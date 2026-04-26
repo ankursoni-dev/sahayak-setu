@@ -36,6 +36,22 @@ from backend.services.resilience import log_pipeline_step
 import json as _json
 import re as _re
 
+_BOLD_MD_RE = _re.compile(r'\*\*(.+?)\*\*', _re.DOTALL)
+_CITATION_RE = _re.compile(r'\s*\[S?\d+\]')  # [1] [2] [S1] [S2] etc.
+_DOC_LABEL_RE = _re.compile(
+    r'^(?:Description|Benefits|Eligibility|Documents\s*needed|How\s*to\s*apply|Exclusions):\s*',
+    _re.IGNORECASE,
+)
+
+
+def _clean_llm_answer(text: str) -> str:
+    """Strip markdown bold markers and inline citation refs the frontend doesn't render."""
+    if not text:
+        return text
+    text = _BOLD_MD_RE.sub(r'\1', text)
+    text = _CITATION_RE.sub('', text)
+    return _re.sub(r'  +', ' ', text).strip()
+
 def _unwrap_json_answer(text: str) -> str | None:
     """If the LLM returned a JSON envelope instead of marker-formatted prose, pull the
     'answer' field out. Returns None when the text isn't a parseable JSON object or
@@ -142,18 +158,22 @@ def _scheme_listing_fallback(
         if show_desc:
             doc = (r.document or "").strip()
             for line in doc.splitlines():
-                line = line.strip(" -•").strip()
+                line = line.strip(" -*•").strip()
                 if not line:
                     continue
                 if line.lower().startswith(scheme.lower()):
                     continue
+                # Strip "Description: " and other section-label prefixes from _build_doc_text
+                line = _DOC_LABEL_RE.sub("", line).strip()
+                if not line:
+                    continue
                 first_line = line
                 break
             if not first_line and doc:
-                first_line = doc[:140]
-            if first_line and len(first_line) > 180:
-                first_line = first_line[:177].rstrip() + "…"
-        bullets.append(f"[{idx}] **{scheme}** — {first_line}" if first_line else f"[{idx}] **{scheme}**")
+                first_line = _DOC_LABEL_RE.sub("", doc[:200]).strip()
+            if first_line and len(first_line) > 160:
+                first_line = first_line[:157].rstrip() + "…"
+        bullets.append(f"[{idx}] {scheme} - {first_line}" if first_line else f"[{idx}] {scheme}")
 
     return "\n".join([intro, "", *bullets, "", outro])
 
@@ -335,14 +355,9 @@ async def execute_search(
                 query_debug={"original": original_query, "rewritten": original_query, "type": qtype},
             )
 
-        normalized_surface = language_service.normalize_hinglish(original_query)
-        detected_lang = language_service.detect_language_code(normalized_surface or original_query)
+        detected_lang = language_service.detect_language_code(original_query)
         lang_register_hint = language_service.register_hint(detected_lang, search_request.language)
         qtype = _query_type(original_query)
-        rewritten_base = (normalized_surface or original_query).strip() or original_query
-        prefer_original_retrieval = language_service.prefer_original_for_retrieval(
-            original_query, normalized_surface
-        )
 
         # Moderation, history fetch, and query rewrite all run in parallel to cut latency.
         # History is fetched here (not later) so the rewrite LLM can resolve pronoun/context
@@ -387,44 +402,30 @@ async def execute_search(
             )
             last_asst_snippet = last_asst[:300].strip()
 
-        rewrite_task: asyncio.Task | None = None
-        if not prefer_original_retrieval:
-            # Always rewrite when there is conversation context (pronoun resolution) or
-            # when the query is short and could benefit from expansion.
-            if last_asst_snippet or len(rewritten_base.split()) <= 5:
-                rewrite_task = asyncio.create_task(
-                    llm_service.rewrite_query(
-                        rewritten_base, search_request.language, context=last_asst_snippet
-                    )
-                )
-
-        rewritten_query = rewritten_base
-        if rewrite_task is not None:
-            try:
-                rewritten_query = await rewrite_task
-            except (asyncio.CancelledError, Exception):
-                rewritten_query = rewritten_base
-
-        # When prefer_original is True (query names a specific scheme in Latin script),
-        # use the un-normalized original so catalog keyword search matches English documents.
-        retrieval_query = original_query if prefer_original_retrieval else rewritten_query
-
-        # Safety net: if there is conversation context, always append the last assistant
-        # snippet to the retrieval query so the vector search anchors to the previously
-        # discussed scheme — even when the LLM rewrite didn't resolve the pronoun.
-        if last_asst_snippet:
-            retrieval_query = f"{retrieval_query} {last_asst_snippet[:200]}"
+        # Always rewrite to English for retrieval. The vector DB is indexed in English
+        # (BAAI/bge-small-en-v1.5), so a Hindi/Tamil/etc. query will miss most relevant
+        # schemes without translation. rewrite_query also resolves pronouns when context
+        # is available. Fails open to original_query if the LLM call times out.
+        rewrite_task = asyncio.create_task(
+            llm_service.rewrite_query(
+                original_query, search_request.language, context=last_asst_snippet
+            )
+        )
+        retrieval_query = original_query
+        rewrite_succeeded = False
+        try:
+            retrieval_query = await rewrite_task
+            rewrite_succeeded = retrieval_query.strip() != original_query.strip()
+        except (asyncio.CancelledError, Exception):
+            pass
 
         query_debug = {
             "original": original_query,
-            "hinglish_normalized": normalized_surface
-            if normalized_surface.strip() != original_query.strip()
-            else None,
             "detected_language": detected_lang,
-            "rewritten": rewritten_query,
+            "ui_language": search_request.language,
             "retrieval_query": retrieval_query,
+            "translation_applied": rewrite_succeeded,
             "context_rewrite": bool(last_asst_snippet),
-            "skipped_llm_query_rewrite": prefer_original_retrieval,
             "type": qtype,
             "pii_redactions": pii_hits,
         }
@@ -598,12 +599,11 @@ async def execute_search(
         max_n = len(relevant_results)
         answer_main = llm_service.validate_citations_in_answer(answer_main, max_n)
         answer_main = llm_service.dedupe_citations(answer_main)
+        answer_main = _clean_llm_answer(answer_main)
 
         # Grounding-failure recovery: if the LLM answer collapsed back to the bare
         # "I don't have verified information" template AND retrieval returned real
-        # schemes, swap in a list-style summary. The previous behaviour rendered a
-        # dead-end message above a fully-populated sources panel + action plan,
-        # which read as "broken product" to users.
+        # schemes, swap in a list-style summary.
         normalised_answer = (answer_main or "").strip()
         if normalised_answer == fallback.strip() and relevant_results:
             replacement = _scheme_listing_fallback(
@@ -615,6 +615,19 @@ async def execute_search(
                     "answer_fallback_swapped_to_listing",
                     extra={"sources": len(relevant_results), "lang": search_request.language},
                 )
+
+        # Log language mismatches — non-blocking, no retry (latency risk).
+        try:
+            from langdetect import detect as _detect_lang
+            detected_out = _detect_lang((answer_main or "")[:400])
+            expected_lang = (search_request.language or "en").split("-")[0].lower()
+            if detected_out and detected_out != expected_lang and detected_out != "en":
+                logger.warning(
+                    "output_language_mismatch",
+                    extra={"expected": expected_lang, "detected": detected_out, "provider": provider},
+                )
+        except Exception:
+            pass
 
         if reasoning_why:
             reasoning_why = llm_service.dedupe_citations(
@@ -649,7 +662,9 @@ async def execute_search(
             relevant_results,
             query=original_query,
         )
-        eligibility_hints = [EligibilityHint(**h) for h in raw_hints]
+        # Drop "unknown" hints — no rule matched the scheme, so the hint adds no signal.
+        # The sources panel already links each scheme to its official portal.
+        eligibility_hints = [EligibilityHint(**h) for h in raw_hints if h.get("verdict") != "unknown"]
 
         response = SearchResponse(
             answer=answer_main,

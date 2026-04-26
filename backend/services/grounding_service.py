@@ -160,7 +160,15 @@ def verify(raw_llm_output: dict, sources: list[SearchResult], fallback_message: 
     verified: list[Claim] = []
     dropped: list[tuple[Claim, str]] = []
 
-    source_embeds = {sid: _embed(src.document or "") for sid, src in source_map.items()}
+    # Embedding the source docs is expensive (50MB English model). Only do it when we
+    # actually need it — i.e. there's at least one same-script claim to compare. For
+    # purely Indic answers, the bge-small-en-v1.5 cross-lingual scores are noise and
+    # we skip the embedding step entirely.
+    any_same_script = any(not _is_indic(c.text) for c in parsed.claims)
+    source_embeds = (
+        {sid: _embed(src.document or "") for sid, src in source_map.items()}
+        if any_same_script else {}
+    )
 
     for claim in parsed.claims:
         src = source_map.get(claim.source_id)
@@ -168,23 +176,31 @@ def verify(raw_llm_output: dict, sources: list[SearchResult], fallback_message: 
             dropped.append((claim, "bad_source_id"))
             continue
 
+        # Number/date/URL exact-match check is language-agnostic — these tokens are
+        # never translated, so an LLM hallucinating "₹50,000" or "2025-04-01" or a
+        # bogus URL gets caught here regardless of claim language.
         ok_num, reason = _numbers_dates_urls_grounded(claim.text, src.document or "")
         if not ok_num:
             dropped.append((claim, reason))
             continue
 
         cross_lang = _is_indic(claim.text)
-        if not cross_lang:
-            # Token overlap is only meaningful when claim and source share the same script.
-            overlap = _token_overlap(claim.text, src.document or "")
-            if overlap < TOKEN_OVERLAP_MIN:
-                dropped.append((claim, f"token_overlap_{overlap:.2f}"))
-                continue
+        if cross_lang:
+            # Indic claim vs. English source: token overlap is always 0 (different scripts)
+            # AND bge-small-en-v1.5 cross-lingual embedding similarity is unreliable
+            # (often noise below 0.42 even for genuine matches). The numbers/dates/URLs
+            # check above is the strongest grounding signal we can apply across scripts —
+            # accept the claim if that passed.
+            verified.append(claim)
+            continue
+
+        overlap = _token_overlap(claim.text, src.document or "")
+        if overlap < TOKEN_OVERLAP_MIN:
+            dropped.append((claim, f"token_overlap_{overlap:.2f}"))
+            continue
 
         sim = _cosine(_embed(claim.text), source_embeds[claim.source_id])
-        # bge-small-en-v1.5 is English-focused; cross-lingual pairs score lower.
-        sim_threshold = EMBED_SIM_MIN_CROSS_LANG if cross_lang else EMBED_SIM_MIN
-        if sim < sim_threshold:
+        if sim < EMBED_SIM_MIN:
             dropped.append((claim, f"embed_sim_{sim:.2f}"))
             continue
 

@@ -530,21 +530,30 @@ async def rewrite_query(query: str, language: str, *, context: str = "") -> str:
     scheme name before the query reaches vector search.
     """
     context_section = (
-        f"\nConversation context — last assistant reply (use this to resolve any "
-        f"pronouns or vague references like 'इस स्कीम', 'स्कीम के तहत', 'this scheme'):\n"
+        f"\nCONVERSATION CONTEXT (last assistant reply — use this to resolve scheme references):\n"
         f"{context}\n"
         if context.strip()
         else ""
     )
+    pronoun_rule = (
+        "STEP 1 — REFERENCE RESOLUTION (do this first when context is provided):\n"
+        "If the query contains ANY of these without a specific scheme name — 'इस', 'उस', 'यह', 'वह', "
+        "'इस स्कीम', 'इस योजना', 'स्कीम', 'योजना', 'इसमें', 'इसके', 'this scheme', 'it', 'the scheme' — "
+        "replace the reference with the ACTUAL scheme name found in the conversation context.\n"
+        "Example: query='इस स्कीम के तहत साल में कितने दिन काम मिलता है', context mentions 'मनरेगा' "
+        "→ output: 'मनरेगा के तहत साल में कितने दिन काम मिलता है'\n"
+        "Example: query='स्कीम के तहत साल में कितने दिन काम मिलता है', context mentions 'MGNREGA' "
+        "→ output: 'मनरेगा के तहत साल में कितने दिन काम मिलता है'\n\n"
+        if context.strip()
+        else ""
+    )
     prompt = (
-        "Rewrite this user query into a precise government-scheme search query for India.\n"
-        "Rules:\n"
-        "- If the query uses pronouns or vague references ('इस', 'उस', 'यह', 'इस स्कीम', "
-        "'स्कीम के तहत', 'this scheme', 'it', etc.), resolve them using the conversation "
-        "context below and replace with the actual scheme name.\n"
+        "You are a search query rewriter for Indian government welfare schemes.\n\n"
+        f"{pronoun_rule}"
+        "STEP 2 — OTHER RULES:\n"
         "- If the query IS already a specific scheme name (PM Kisan, MGNREGA, Ayushman, "
         "Ujjwala, Mudra, SVANidhi, PMAY, Jan Dhan, Vishwakarma, etc.), return it UNCHANGED.\n"
-        "- Otherwise expand: add eligibility context, benefits, documents, or state if present.\n"
+        "- Otherwise expand with eligibility context, benefits, documents, or state.\n"
         "- Max 20 words. Return ONLY the rewritten query — no quotes, no bullets, no explanation.\n"
         f"{context_section}"
         f"\nTarget language: {language}\n"

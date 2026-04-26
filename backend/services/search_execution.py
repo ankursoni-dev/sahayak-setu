@@ -350,6 +350,12 @@ async def execute_search(
         # use the un-normalized original so catalog keyword search matches English documents.
         retrieval_query = original_query if prefer_original_retrieval else rewritten_query
 
+        # Safety net: if there is conversation context, always append the last assistant
+        # snippet to the retrieval query so the vector search anchors to the previously
+        # discussed scheme — even when the LLM rewrite didn't resolve the pronoun.
+        if last_asst_snippet:
+            retrieval_query = f"{retrieval_query} {last_asst_snippet[:200]}"
+
         query_debug = {
             "original": original_query,
             "hinglish_normalized": normalized_surface

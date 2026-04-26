@@ -36,7 +36,6 @@ from backend.services.resilience import log_pipeline_step
 import json as _json
 import re as _re
 
-
 def _unwrap_json_answer(text: str) -> str | None:
     """If the LLM returned a JSON envelope instead of marker-formatted prose, pull the
     'answer' field out. Returns None when the text isn't a parseable JSON object or
@@ -286,23 +285,20 @@ async def execute_search(
             original_query, normalized_surface
         )
 
-        # Moderation and (speculative) query rewrite run in parallel to cut latency.
-        # Rewrite is cancelled+discarded when moderation blocks the query.
+        # Moderation, history fetch, and query rewrite all run in parallel to cut latency.
+        # History is fetched here (not later) so the rewrite LLM can resolve pronoun/context
+        # references ("इस स्कीम", "स्कीम के तहत", "this scheme") before retrieval.
+        # Rewrite and history fetch are cancelled when moderation blocks the query.
         log_pipeline_step("moderation", "start", "")
         mod_task = asyncio.create_task(
             moderation_service.check(clean_query, search_request.language)
         )
-        rewrite_task: asyncio.Task | None = None
-        if len(rewritten_base.split()) <= 5 and not prefer_original_retrieval:
-            rewrite_task = asyncio.create_task(
-                llm_service.rewrite_query(rewritten_base, search_request.language)
-            )
+        history_task = asyncio.create_task(session_service.get_history(raw_user_id))
 
         moderation = await mod_task
         if not moderation.allowed:
             log_pipeline_step("moderation", "blocked", moderation.category or "")
-            if rewrite_task is not None:
-                rewrite_task.cancel()
+            history_task.cancel()
             return SearchResponse(
                 answer=None,
                 provider=None,
@@ -315,17 +311,45 @@ async def execute_search(
         log_pipeline_step("moderation", "allowed", moderation.category or "ok")
         _t["moderation_ms"] = round((time.monotonic() - _t0) * 1000)
 
+        history: list[dict] = []
+        try:
+            history = await history_task
+        except Exception:
+            pass
+
+        # Build a short context string from the last assistant reply for the rewrite LLM.
+        # This lets it resolve references like "इस स्कीम", "स्कीम के तहत", "this scheme"
+        # to the actual scheme name discussed in the previous turn.
+        last_asst_snippet = ""
+        if history:
+            last_asst = next(
+                (m["content"] for m in reversed(history) if m.get("role") == "assistant"),
+                "",
+            )
+            last_asst_snippet = last_asst[:300].strip()
+
+        rewrite_task: asyncio.Task | None = None
+        if not prefer_original_retrieval:
+            # Always rewrite when there is conversation context (pronoun resolution) or
+            # when the query is short and could benefit from expansion.
+            if last_asst_snippet or len(rewritten_base.split()) <= 5:
+                rewrite_task = asyncio.create_task(
+                    llm_service.rewrite_query(
+                        rewritten_base, search_request.language, context=last_asst_snippet
+                    )
+                )
+
         rewritten_query = rewritten_base
         if rewrite_task is not None:
             try:
                 rewritten_query = await rewrite_task
             except (asyncio.CancelledError, Exception):
                 rewritten_query = rewritten_base
+
         # When prefer_original is True (query names a specific scheme in Latin script),
         # use the un-normalized original so catalog keyword search matches English documents.
-        # Hinglish-normalized form has Devanagari tokens ("किसान") that won't match
-        # Latin "kisan" in the English catalog — vector search handles multilingual fine.
         retrieval_query = original_query if prefer_original_retrieval else rewritten_query
+
         query_debug = {
             "original": original_query,
             "hinglish_normalized": normalized_surface
@@ -334,6 +358,7 @@ async def execute_search(
             "detected_language": detected_lang,
             "rewritten": rewritten_query,
             "retrieval_query": retrieval_query,
+            "context_rewrite": bool(last_asst_snippet),
             "skipped_llm_query_rewrite": prefer_original_retrieval,
             "type": qtype,
             "pii_redactions": pii_hits,
@@ -440,7 +465,6 @@ async def execute_search(
                 query_debug=query_debug,
             )
 
-        history = await session_service.get_history(raw_user_id)
         use_json_llm = LLM_JSON_MODE and stream_emit is None
         messages = llm_service.build_messages(
             original_query,

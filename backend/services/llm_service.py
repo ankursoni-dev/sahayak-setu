@@ -522,16 +522,32 @@ async def generate_json_prompt(prompt: str) -> tuple[dict, str]:
         return {}, f"openrouter/{OPENROUTER_MODEL}"
 
 
-async def rewrite_query(query: str, language: str) -> str:
-    """Query rewrite for retrieval recall. Fail-open to original query."""
+async def rewrite_query(query: str, language: str, *, context: str = "") -> str:
+    """Query rewrite for retrieval recall. Fail-open to original query.
+
+    When ``context`` (last assistant reply) is provided, the LLM resolves pronoun
+    references — "इस स्कीम", "स्कीम के तहत", "this scheme" etc. — to the actual
+    scheme name before the query reaches vector search.
+    """
+    context_section = (
+        f"\nConversation context — last assistant reply (use this to resolve any "
+        f"pronouns or vague references like 'इस स्कीम', 'स्कीम के तहत', 'this scheme'):\n"
+        f"{context}\n"
+        if context.strip()
+        else ""
+    )
     prompt = (
-        "Rewrite this short user query into a precise government-scheme search query for India.\n"
+        "Rewrite this user query into a precise government-scheme search query for India.\n"
         "Rules:\n"
-        "- If the query IS already a specific scheme name (PM Kisan, MGNREGA, Ayushman, Ujjwala, "
-        "Mudra, SVANidhi, PMAY, Jan Dhan, Vishwakarma, etc.), return it UNCHANGED.\n"
+        "- If the query uses pronouns or vague references ('इस', 'उस', 'यह', 'इस स्कीम', "
+        "'स्कीम के तहत', 'this scheme', 'it', etc.), resolve them using the conversation "
+        "context below and replace with the actual scheme name.\n"
+        "- If the query IS already a specific scheme name (PM Kisan, MGNREGA, Ayushman, "
+        "Ujjwala, Mudra, SVANidhi, PMAY, Jan Dhan, Vishwakarma, etc.), return it UNCHANGED.\n"
         "- Otherwise expand: add eligibility context, benefits, documents, or state if present.\n"
-        "- Max 20 words. Return ONLY the rewritten query — no quotes, no bullets, no explanation.\n\n"
-        f"Target language: {language}\n"
+        "- Max 20 words. Return ONLY the rewritten query — no quotes, no bullets, no explanation.\n"
+        f"{context_section}"
+        f"\nTarget language: {language}\n"
         f"User query: {query}"
     )
     try:

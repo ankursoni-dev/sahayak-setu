@@ -13,6 +13,7 @@ from pydantic import BaseModel, ValidationError
 from backend.services.retrieval_service import SearchResult
 
 EMBED_SIM_MIN = 0.60
+EMBED_SIM_MIN_CROSS_LANG = 0.42  # bge-small-en-v1.5 scores cross-lingual pairs lower
 TOKEN_OVERLAP_MIN = 0.30
 CLAIM_DROP_LIMIT = 0.50
 MIN_ANSWER_CHARS = 30
@@ -49,6 +50,10 @@ _STOPWORDS = {"the", "a", "an", "is", "are", "of", "to", "for", "in", "and", "or
 _NUMBER_RE = re.compile(r"\b\d[\d,./-]*\b")
 _URL_RE = re.compile(r"https?://\S+")
 _DATE_RE = re.compile(r"\b(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4})\b")
+# Detects Indic-script text (Devanagari, Tamil, Telugu, Kannada, Bengali, Gujarati, Gurmukhi).
+# Source documents are English-only; token overlap against an Indic claim is always 0 —
+# meaningless cross-language comparison, so we skip it and rely on embedding similarity.
+_INDIC_SCRIPT_RE = re.compile(r"[ऀ-ॿ஀-௿ఀ-౿ಀ-೿ঀ-৿઀-૿਀-੿]")
 
 # Lazy-load the embedder on first use so startup is not blocked by a model download.
 # The lock guards against two concurrent requests each kicking off the (slow, ~50MB)
@@ -81,6 +86,17 @@ def _token_overlap(claim: str, source: str) -> float:
         return 0.0
     src_tokens = _tokens(source)
     return len(claim_tokens & src_tokens) / len(claim_tokens)
+
+
+def _is_indic(text: str) -> bool:
+    """True when the claim is predominantly in an Indic script (Hindi, Tamil, etc.).
+    Token overlap against English-only source docs is always ~0 for these claims,
+    making the check a false negative — skip it and rely on embedding similarity instead."""
+    words = re.findall(r"\w+", text or "")
+    if not words:
+        return False
+    indic = sum(1 for w in words if _INDIC_SCRIPT_RE.search(w))
+    return indic / len(words) >= 0.25
 
 
 def _embed(text: str) -> list[float]:
@@ -157,13 +173,18 @@ def verify(raw_llm_output: dict, sources: list[SearchResult], fallback_message: 
             dropped.append((claim, reason))
             continue
 
-        overlap = _token_overlap(claim.text, src.document or "")
-        if overlap < TOKEN_OVERLAP_MIN:
-            dropped.append((claim, f"token_overlap_{overlap:.2f}"))
-            continue
+        cross_lang = _is_indic(claim.text)
+        if not cross_lang:
+            # Token overlap is only meaningful when claim and source share the same script.
+            overlap = _token_overlap(claim.text, src.document or "")
+            if overlap < TOKEN_OVERLAP_MIN:
+                dropped.append((claim, f"token_overlap_{overlap:.2f}"))
+                continue
 
         sim = _cosine(_embed(claim.text), source_embeds[claim.source_id])
-        if sim < EMBED_SIM_MIN:
+        # bge-small-en-v1.5 is English-focused; cross-lingual pairs score lower.
+        sim_threshold = EMBED_SIM_MIN_CROSS_LANG if cross_lang else EMBED_SIM_MIN
+        if sim < sim_threshold:
             dropped.append((claim, f"embed_sim_{sim:.2f}"))
             continue
 

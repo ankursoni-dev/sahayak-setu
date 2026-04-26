@@ -122,10 +122,33 @@ def build_messages(
             parts.append(language_register_hint)
         lang_extra = "\n\n" + " ".join(parts)
 
+    _LANG_NAMES: dict[str, str] = {
+        "hi": "Hindi", "hi-IN": "Hindi",
+        "mr": "Marathi", "mr-IN": "Marathi",
+        "gu": "Gujarati", "gu-IN": "Gujarati",
+        "kn": "Kannada", "kn-IN": "Kannada",
+        "ta": "Tamil", "ta-IN": "Tamil",
+        "te": "Telugu", "te-IN": "Telugu",
+        "ml": "Malayalam", "ml-IN": "Malayalam",
+        "bn": "Bengali", "bn-IN": "Bengali",
+        "pa": "Punjabi", "pa-IN": "Punjabi",
+        "en": "English", "en-IN": "English",
+    }
+    lang_name = _LANG_NAMES.get(language) or _LANG_NAMES.get(language.split("-")[0]) or language
+    language_rule = (
+        f"CRITICAL — LANGUAGE RULE (absolute highest priority, no exceptions):\n"
+        f"You MUST respond ENTIRELY in {lang_name} ({language}). "
+        f"Every single word of your answer, next_step, why_it_fits, and near_miss "
+        f"fields must be written in {lang_name}. "
+        f"The user may type their query in any language — you ALWAYS reply in {lang_name}. "
+        f"Never mix languages. Never switch to English. If you cannot express something "
+        f"in {lang_name}, use the closest equivalent — do not fall back to English.\n"
+    )
+
     messages: list[dict] = [
         {
             "role": "system",
-            "content": f"{SYSTEM_PROMPT}\n\nTARGET RESPONSE LANGUAGE: {language}{lang_extra}",
+            "content": f"{language_rule}\n{SYSTEM_PROMPT}\n\nTARGET RESPONSE LANGUAGE: {language}{lang_extra}",
         }
     ]
     if history:

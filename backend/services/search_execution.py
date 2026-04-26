@@ -158,6 +158,65 @@ def _scheme_listing_fallback(
     return "\n".join([intro, "", *bullets, "", outro])
 
 
+_INDIAN_STATE_CANONICAL: dict[str, str] = {
+    # States
+    "andhra pradesh": "Andhra Pradesh", "ap": "Andhra Pradesh",
+    "arunachal pradesh": "Arunachal Pradesh",
+    "assam": "Assam",
+    "bihar": "Bihar",
+    "chhattisgarh": "Chhattisgarh", "chattisgarh": "Chhattisgarh",
+    "goa": "Goa",
+    "gujarat": "Gujarat",
+    "haryana": "Haryana",
+    "himachal pradesh": "Himachal Pradesh", "hp": "Himachal Pradesh",
+    "jharkhand": "Jharkhand",
+    "karnataka": "Karnataka",
+    "kerala": "Kerala",
+    "madhya pradesh": "Madhya Pradesh", "mp": "Madhya Pradesh",
+    "maharashtra": "Maharashtra",
+    "manipur": "Manipur",
+    "meghalaya": "Meghalaya",
+    "mizoram": "Mizoram",
+    "nagaland": "Nagaland",
+    "odisha": "Odisha", "orissa": "Odisha",
+    "punjab": "Punjab",
+    "rajasthan": "Rajasthan",
+    "sikkim": "Sikkim",
+    "tamil nadu": "Tamil Nadu",
+    "telangana": "Telangana",
+    "tripura": "Tripura",
+    "uttar pradesh": "Uttar Pradesh", "up": "Uttar Pradesh",
+    "uttarakhand": "Uttarakhand", "uttaranchal": "Uttarakhand",
+    "west bengal": "West Bengal",
+    # UTs
+    "delhi": "Delhi", "new delhi": "Delhi",
+    "jammu and kashmir": "Jammu and Kashmir", "j&k": "Jammu and Kashmir", "j and k": "Jammu and Kashmir",
+    "ladakh": "Ladakh",
+    "chandigarh": "Chandigarh",
+    "puducherry": "Puducherry", "pondicherry": "Puducherry",
+    "andaman and nicobar": "Andaman and Nicobar Islands",
+    "lakshadweep": "Lakshadweep",
+    "dadra and nagar haveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "daman and diu": "Dadra and Nagar Haveli and Daman and Diu",
+}
+
+# Build one compiled regex from all state keys — longest keys first so multi-word states
+# ("madhya pradesh") match before shorter substrings ("pradesh").
+_STATE_KEYS_SORTED = sorted(_INDIAN_STATE_CANONICAL, key=len, reverse=True)
+_STATE_PATTERN = _re.compile(
+    r"\b(" + "|".join(_re.escape(k) for k in _STATE_KEYS_SORTED) + r")\b",
+    _re.IGNORECASE,
+)
+
+
+def _extract_state_from_query(query: str) -> str | None:
+    """Try to find an Indian state name anywhere in the query text."""
+    m = _STATE_PATTERN.search(query or "")
+    if not m:
+        return None
+    return _INDIAN_STATE_CANONICAL.get(m.group(1).lower())
+
+
 def _user_state_from_profile(profile: dict) -> str | None:
     state = profile.get("state") if isinstance(profile, dict) else None
     if not isinstance(state, str):
@@ -370,7 +429,7 @@ async def execute_search(
             "pii_redactions": pii_hits,
         }
 
-        user_state = _user_state_from_profile(search_request.profile or {})
+        user_state = _user_state_from_profile(search_request.profile or {}) or _extract_state_from_query(original_query)
         relevant_results: list = []
         near_miss_results: list = []
         context = ""

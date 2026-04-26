@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { ScrollToTop } from '@/components/shared/ScrollToTop';
 
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFound'));
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
+      <ScrollToTop />
     </ErrorBoundary>
   );
 }
